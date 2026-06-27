@@ -17,5 +17,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install pdm
-      - run: pdm install
+      - run: pdm install -G lint -G test
+      - run: pdm run pytest tests/ -q
+      - run: pdm run ruff check backon/
+      - run: pdm build
       - run: pdm publish --repository pypi

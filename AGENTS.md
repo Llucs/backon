@@ -54,3 +54,13 @@
 - Cover edge cases: 0 max_tries, max_time expiry, giveup callbacks, global disable/enable.
 - Use pytest with `asyncio_mode = auto` for async tests.
 - Test that backoff issues are fixed (see issue list).
+
+## Release Process
+
+1. Bump `__version__` in `backon/__init__.py` and `version` in `pyproject.toml`.
+2. Update `CHANGELOG.md` with the new version, date, and changes.
+3. Commit with message `Release vX.Y.Z`.
+4. Push to `main`.
+5. Create a **GitHub Release** from the tag vX.Y.Z (click "Releases" → "Draft a new release").
+6. The `Release` workflow auto-publishes to PyPI via trusted publishing (OIDC).
+7. Verify at https://pypi.org/project/backon/.

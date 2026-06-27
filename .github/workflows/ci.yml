@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install pdm
-      - run: pdm install
+      - run: pdm install -G lint -G test
       - run: pdm run pytest tests/ -v
       - run: pdm run mypy backon/
 
@@ -31,6 +31,6 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install pdm
-      - run: pdm install
+      - run: pdm install -G lint
       - run: pdm run ruff check backon/ tests/
       - run: pdm run ruff format --check backon/ tests/

@@ -3,6 +3,7 @@
 > Function decoration for backoff and retry — modern, fast, zero dependencies.
 
 [![CI](https://github.com/Llucs/backon/actions/workflows/ci.yml/badge.svg)](https://github.com/Llucs/backon/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)](https://github.com/Llucs/backon/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Llucs/backon/actions/workflows/codeql.yml/badge.svg)](https://github.com/Llucs/backon/actions/workflows/codeql.yml)
 [![PyPI](https://img.shields.io/pypi/v/backon.svg)](https://pypi.org/project/backon/)
 [![Python](https://img.shields.io/pypi/pyversions/backon.svg)](https://pypi.org/project/backon/)

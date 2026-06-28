@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -52,28 +48,6 @@ jobs:
 
       - run: pdm install -G lint
 
-      - name: Auto-fix with Ruff
-        run: |
-          pdm run ruff check backon/ tests/ --fix
-          pdm run ruff format backon/ tests/
+      - run: pdm run ruff check backon/ tests/
 
-      - name: Verify formatting
-        run: |
-          pdm run ruff check backon/ tests/
-          pdm run ruff format --check backon/ tests/
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
-        with:
-          commit-message: "style: apply Ruff auto-fixes"
-          title: "style: apply Ruff auto-fixes"
-          body: |
-            ## Automated code cleanup
-
-            This PR was created automatically by GitHub Actions.
-
-            - Applied Ruff auto-fixes
-            - Applied Ruff formatting
-
-          branch: ci/ruff-auto-fixes
-          delete-branch: true
+      - run: pdm run ruff format --check backon/ tests/

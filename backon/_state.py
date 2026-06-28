@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any
 
 
 class TryAgain(Exception):
@@ -28,7 +29,7 @@ class RetryError(Exception):
 @dataclass
 class Attempt:
     tries: int = 0
-    exception: Optional[BaseException] = None
+    exception: BaseException | None = None
     value: Any = None
     wait: float = 0.0
     elapsed: float = 0.0
@@ -43,7 +44,7 @@ class RetryState:
     start_time: float = 0.0
     elapsed: float = 0.0
     idle_for: float = 0.0
-    outcome: Optional[Attempt] = None
+    outcome: Attempt | None = None
     _lock: threading.local = field(default_factory=threading.local)
 
     def __post_init__(self):

@@ -3,7 +3,8 @@ import functools
 import logging
 import operator
 import time as time_module
-from typing import Any, Callable, Iterable, Optional, Type, Union
+from collections.abc import Callable, Iterable
+from typing import Any
 
 from backon._common import (
     _config_handlers,
@@ -35,20 +36,20 @@ def on_predicate(
     wait_gen: _WaitGenerator,
     predicate: _Predicate[Any] = operator.not_,
     *,
-    max_tries: Optional[_MaybeCallable[int]] = None,
-    max_time: Optional[_MaybeCallable[float]] = None,
-    jitter: Union[_Jitterer, None] = full_jitter,
-    on_success: Union[_Handler, Iterable[_Handler], None] = None,
-    on_backoff: Union[_Handler, Iterable[_Handler], None] = None,
-    on_giveup: Union[_Handler, Iterable[_Handler], None] = None,
-    on_attempt: Union[_Handler, Iterable[_Handler], None] = None,
-    before_sleep: Union[_Handler, Iterable[_Handler], None] = None,
+    max_tries: _MaybeCallable[int] | None = None,
+    max_time: _MaybeCallable[float] | None = None,
+    jitter: _Jitterer | None = full_jitter,
+    on_success: _Handler | Iterable[_Handler] | None = None,
+    on_backoff: _Handler | Iterable[_Handler] | None = None,
+    on_giveup: _Handler | Iterable[_Handler] | None = None,
+    on_attempt: _Handler | Iterable[_Handler] | None = None,
+    before_sleep: _Handler | Iterable[_Handler] | None = None,
     logger: _MaybeLogger = "backon",
     backoff_log_level: int = logging.INFO,
     giveup_log_level: int = logging.ERROR,
-    retry_error_callback: Optional[Callable[[dict], Any]] = None,
+    retry_error_callback: Callable[[dict], Any] | None = None,
     raise_on_giveup: bool = True,
-    sleep: Optional[Callable[[float], Any]] = None,
+    sleep: Callable[[float], Any] | None = None,
     **wait_gen_kwargs: Any,
 ) -> Callable[[_CallableT], _CallableT]:
     def decorate(target):
@@ -136,23 +137,23 @@ def on_predicate(
 
 def on_exception(
     wait_gen: _WaitGenerator,
-    exception: _MaybeSequence[Type[Exception]],
+    exception: _MaybeSequence[type[Exception]],
     *,
-    max_tries: Optional[_MaybeCallable[int]] = None,
-    max_time: Optional[_MaybeCallable[float]] = None,
-    jitter: Union[_Jitterer, None] = full_jitter,
+    max_tries: _MaybeCallable[int] | None = None,
+    max_time: _MaybeCallable[float] | None = None,
+    jitter: _Jitterer | None = full_jitter,
     giveup: _Predicate[Exception] = lambda e: False,
-    on_success: Union[_Handler, Iterable[_Handler], None] = None,
-    on_backoff: Union[_Handler, Iterable[_Handler], None] = None,
-    on_giveup: Union[_Handler, Iterable[_Handler], None] = None,
-    on_attempt: Union[_Handler, Iterable[_Handler], None] = None,
-    before_sleep: Union[_Handler, Iterable[_Handler], None] = None,
+    on_success: _Handler | Iterable[_Handler] | None = None,
+    on_backoff: _Handler | Iterable[_Handler] | None = None,
+    on_giveup: _Handler | Iterable[_Handler] | None = None,
+    on_attempt: _Handler | Iterable[_Handler] | None = None,
+    before_sleep: _Handler | Iterable[_Handler] | None = None,
     raise_on_giveup: bool = True,
-    retry_error_callback: Optional[Callable[[dict], Any]] = None,
+    retry_error_callback: Callable[[dict], Any] | None = None,
     logger: _MaybeLogger = "backon",
     backoff_log_level: int = logging.INFO,
     giveup_log_level: int = logging.ERROR,
-    sleep: Optional[Callable[[float], Any]] = None,
+    sleep: Callable[[float], Any] | None = None,
     **wait_gen_kwargs: Any,
 ) -> Callable[[_CallableT], _CallableT]:
     def decorate(target):

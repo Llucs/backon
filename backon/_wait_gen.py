@@ -1,11 +1,12 @@
 import itertools
 import math
 import random
-from typing import Any, Callable, Generator, Iterable, Optional, Sequence, Union
+from collections.abc import Callable, Generator, Iterable, Sequence
+from typing import Any
 
 
 def expo(
-    base: float = 2, factor: float = 1, max_value: Optional[float] = None
+    base: float = 2, factor: float = 1, max_value: float | None = None
 ) -> Generator[float, Any, None]:
     yield 0.0  # prime
     n = 0
@@ -19,7 +20,7 @@ def expo(
 
 
 def decay(
-    initial_value: float = 1, decay_factor: float = 1, min_value: Optional[float] = None
+    initial_value: float = 1, decay_factor: float = 1, min_value: float | None = None
 ) -> Generator[float, Any, None]:
     yield 0.0  # prime
     t = 0
@@ -32,7 +33,7 @@ def decay(
             yield min_value
 
 
-def fibo(max_value: Optional[int] = None) -> Generator[int, None, None]:
+def fibo(max_value: int | None = None) -> Generator[int, None, None]:
     yield 0  # prime
     a = 1
     b = 1
@@ -45,7 +46,7 @@ def fibo(max_value: Optional[int] = None) -> Generator[int, None, None]:
 
 
 def constant(
-    interval: Union[int, float, Sequence[float]] = 1,
+    interval: int | float | Sequence[float] = 1,
 ) -> Generator[float, None, None]:
     yield 0.0  # prime
     if isinstance(interval, (int, float)):
@@ -53,7 +54,7 @@ def constant(
     else:
         itr = iter(interval)
 
-    for val in itr:
+    for val in itr:  # noqa: UP028
         yield val
 
 
@@ -65,7 +66,7 @@ def runtime(*, value: Callable[[Any], float]) -> Generator[float, None, None]:
 
 def wait_random_exponential(
     multiplier: float = 1,
-    max_value: Optional[float] = None,
+    max_value: float | None = None,
     exp_base: float = 2,
     min_value: float = 0,
 ) -> Generator[float, None, None]:
@@ -82,7 +83,7 @@ def wait_random_exponential(
 
 
 def wait_incrementing(
-    start: float = 1, increment: float = 1, max_value: Optional[float] = None
+    start: float = 1, increment: float = 1, max_value: float | None = None
 ) -> Generator[float, None, None]:
     yield 0.0
     n = 0

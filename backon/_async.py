@@ -196,7 +196,7 @@ def retry_exception(
                     seconds = _next_wait(wait, e, jitter, elapsed, max_time_value)
                 except StopIteration:
                     await _call_handlers(on_giveup, **details, exception=e)
-                    raise e
+                    raise e from None
 
                 await _call_handlers(on_backoff, **details, wait=seconds, exception=e)
 

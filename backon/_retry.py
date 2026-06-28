@@ -4,7 +4,8 @@ import asyncio
 import logging
 import operator
 import time as time_module
-from typing import Any, Callable, Iterable, Optional, Type, Union
+from collections.abc import Callable, Iterable
+from typing import Any
 
 from backon._common import (
     _config_handlers,
@@ -169,7 +170,7 @@ def _retry_loop_sync(
                 if retry_error_callback is not None:
                     return retry_error_callback(details)
                 if raise_on_giveup:
-                    raise exc
+                    raise exc from None
                 return None
 
             try:
@@ -179,7 +180,7 @@ def _retry_loop_sync(
                 details["exception"] = exc
                 _sync_call_handlers(on_giveup, details)
                 if raise_on_giveup:
-                    raise exc
+                    raise exc from None
                 return None
 
             details = state.to_details()
@@ -290,7 +291,7 @@ async def _retry_loop_async(
                 if retry_error_callback is not None:
                     return retry_error_callback(details)
                 if raise_on_giveup:
-                    raise exc
+                    raise exc from None
                 return None
 
             try:
@@ -300,7 +301,7 @@ async def _retry_loop_async(
                 details["exception"] = exc
                 await _async_call_handlers(on_giveup, details)
                 if raise_on_giveup:
-                    raise exc
+                    raise exc from None
                 return None
 
             details = state.to_details()
@@ -346,27 +347,29 @@ def _retry_sync(
     target: Callable[..., Any],
     wait_gen: _WaitGenerator,
     *,
-    condition: Optional[RetryCondition] = None,
-    stop: Optional[Stop] = None,
+    condition: RetryCondition | None = None,
+    stop: Stop | None = None,
     predicate: _Predicate[Any] = operator.not_,
-    exception: Optional[_MaybeSequence[Type[Exception]]] = None,
-    max_tries: Optional[_MaybeCallable[int]] = None,
-    max_time: Optional[_MaybeCallable[float]] = None,
-    jitter: Union[_Jitterer, None] = full_jitter,
+    exception: _MaybeSequence[type[Exception]] | None = None,
+    max_tries: _MaybeCallable[int] | None = None,
+    max_time: _MaybeCallable[float] | None = None,
+    jitter: _Jitterer | None = full_jitter,
     giveup: _Predicate[Exception] = lambda e: False,
-    on_success: Union[_Handler, Iterable[_Handler], None] = None,
-    on_backoff: Union[_Handler, Iterable[_Handler], None] = None,
-    on_giveup: Union[_Handler, Iterable[_Handler], None] = None,
-    on_attempt: Union[_Handler, Iterable[_Handler], None] = None,
-    before_sleep: Union[_Handler, Iterable[_Handler], None] = None,
-    retry_error_callback: Optional[Callable[[dict], Any]] = None,
+    on_success: _Handler | Iterable[_Handler] | None = None,
+    on_backoff: _Handler | Iterable[_Handler] | None = None,
+    on_giveup: _Handler | Iterable[_Handler] | None = None,
+    on_attempt: _Handler | Iterable[_Handler] | None = None,
+    before_sleep: _Handler | Iterable[_Handler] | None = None,
+    retry_error_callback: Callable[[dict], Any] | None = None,
     raise_on_giveup: bool = True,
     logger: _MaybeLogger = "backon",
     backoff_log_level: int = logging.INFO,
     giveup_log_level: int = logging.ERROR,
-    sleep: Optional[Callable[[float], Any]] = None,
-    wait_gen_kwargs: dict = {},
+    sleep: Callable[[float], Any] | None = None,
+    wait_gen_kwargs: dict | None = None,
 ) -> Any:
+    if wait_gen_kwargs is None:
+        wait_gen_kwargs = {}
     if not is_enabled():
         return target()
 
@@ -417,27 +420,29 @@ async def _retry_async(
     target: Callable[..., Any],
     wait_gen: _WaitGenerator,
     *,
-    condition: Optional[RetryCondition] = None,
-    stop: Optional[Stop] = None,
+    condition: RetryCondition | None = None,
+    stop: Stop | None = None,
     predicate: _Predicate[Any] = operator.not_,
-    exception: Optional[_MaybeSequence[Type[Exception]]] = None,
-    max_tries: Optional[_MaybeCallable[int]] = None,
-    max_time: Optional[_MaybeCallable[float]] = None,
-    jitter: Union[_Jitterer, None] = full_jitter,
+    exception: _MaybeSequence[type[Exception]] | None = None,
+    max_tries: _MaybeCallable[int] | None = None,
+    max_time: _MaybeCallable[float] | None = None,
+    jitter: _Jitterer | None = full_jitter,
     giveup: _Predicate[Exception] = lambda e: False,
-    on_success: Union[_Handler, Iterable[_Handler], None] = None,
-    on_backoff: Union[_Handler, Iterable[_Handler], None] = None,
-    on_giveup: Union[_Handler, Iterable[_Handler], None] = None,
-    on_attempt: Union[_Handler, Iterable[_Handler], None] = None,
-    before_sleep: Union[_Handler, Iterable[_Handler], None] = None,
-    retry_error_callback: Optional[Callable[[dict], Any]] = None,
+    on_success: _Handler | Iterable[_Handler] | None = None,
+    on_backoff: _Handler | Iterable[_Handler] | None = None,
+    on_giveup: _Handler | Iterable[_Handler] | None = None,
+    on_attempt: _Handler | Iterable[_Handler] | None = None,
+    before_sleep: _Handler | Iterable[_Handler] | None = None,
+    retry_error_callback: Callable[[dict], Any] | None = None,
     raise_on_giveup: bool = True,
     logger: _MaybeLogger = "backon",
     backoff_log_level: int = logging.INFO,
     giveup_log_level: int = logging.ERROR,
-    sleep: Optional[Callable[[float], Any]] = None,
-    wait_gen_kwargs: dict = {},
+    sleep: Callable[[float], Any] | None = None,
+    wait_gen_kwargs: dict | None = None,
 ) -> Any:
+    if wait_gen_kwargs is None:
+        wait_gen_kwargs = {}
     if not is_enabled():
         return await target()
 
@@ -489,24 +494,24 @@ def retry(
     wait_gen: _WaitGenerator = expo,
     *,
     predicate: _Predicate[Any] = operator.not_,
-    exception: Optional[_MaybeSequence[Type[Exception]]] = None,
-    max_tries: Optional[_MaybeCallable[int]] = None,
-    max_time: Optional[_MaybeCallable[float]] = None,
-    jitter: Union[_Jitterer, None] = full_jitter,
+    exception: _MaybeSequence[type[Exception]] | None = None,
+    max_tries: _MaybeCallable[int] | None = None,
+    max_time: _MaybeCallable[float] | None = None,
+    jitter: _Jitterer | None = full_jitter,
     giveup: _Predicate[Exception] = lambda e: False,
-    condition: Optional[RetryCondition] = None,
-    stop: Optional[Stop] = None,
-    on_success: Union[_Handler, Iterable[_Handler], None] = None,
-    on_backoff: Union[_Handler, Iterable[_Handler], None] = None,
-    on_giveup: Union[_Handler, Iterable[_Handler], None] = None,
-    on_attempt: Union[_Handler, Iterable[_Handler], None] = None,
-    before_sleep: Union[_Handler, Iterable[_Handler], None] = None,
-    retry_error_callback: Optional[Callable[[dict], Any]] = None,
+    condition: RetryCondition | None = None,
+    stop: Stop | None = None,
+    on_success: _Handler | Iterable[_Handler] | None = None,
+    on_backoff: _Handler | Iterable[_Handler] | None = None,
+    on_giveup: _Handler | Iterable[_Handler] | None = None,
+    on_attempt: _Handler | Iterable[_Handler] | None = None,
+    before_sleep: _Handler | Iterable[_Handler] | None = None,
+    retry_error_callback: Callable[[dict], Any] | None = None,
     raise_on_giveup: bool = True,
     logger: _MaybeLogger = "backon",
     backoff_log_level: int = logging.INFO,
     giveup_log_level: int = logging.ERROR,
-    sleep: Optional[Callable[[float], Any]] = None,
+    sleep: Callable[[float], Any] | None = None,
     **wait_gen_kwargs: Any,
 ) -> Any:
     if asyncio.iscoroutinefunction(target):
@@ -566,24 +571,24 @@ class Retrying:
         wait_gen: _WaitGenerator = expo,
         *,
         predicate: _Predicate[Any] = operator.not_,
-        exception: Optional[_MaybeSequence[Type[Exception]]] = None,
-        max_tries: Optional[_MaybeCallable[int]] = None,
-        max_time: Optional[_MaybeCallable[float]] = None,
-        jitter: Union[_Jitterer, None] = full_jitter,
+        exception: _MaybeSequence[type[Exception]] | None = None,
+        max_tries: _MaybeCallable[int] | None = None,
+        max_time: _MaybeCallable[float] | None = None,
+        jitter: _Jitterer | None = full_jitter,
         giveup: _Predicate[Exception] = lambda e: False,
-        condition: Optional[RetryCondition] = None,
-        stop: Optional[Stop] = None,
-        on_success: Union[_Handler, Iterable[_Handler], None] = None,
-        on_backoff: Union[_Handler, Iterable[_Handler], None] = None,
-        on_giveup: Union[_Handler, Iterable[_Handler], None] = None,
-        on_attempt: Union[_Handler, Iterable[_Handler], None] = None,
-        before_sleep: Union[_Handler, Iterable[_Handler], None] = None,
-        retry_error_callback: Optional[Callable[[dict], Any]] = None,
+        condition: RetryCondition | None = None,
+        stop: Stop | None = None,
+        on_success: _Handler | Iterable[_Handler] | None = None,
+        on_backoff: _Handler | Iterable[_Handler] | None = None,
+        on_giveup: _Handler | Iterable[_Handler] | None = None,
+        on_attempt: _Handler | Iterable[_Handler] | None = None,
+        before_sleep: _Handler | Iterable[_Handler] | None = None,
+        retry_error_callback: Callable[[dict], Any] | None = None,
         raise_on_giveup: bool = True,
         logger: _MaybeLogger = "backon",
         backoff_log_level: int = logging.INFO,
         giveup_log_level: int = logging.ERROR,
-        sleep: Optional[Callable[[float], Any]] = None,
+        sleep: Callable[[float], Any] | None = None,
         enabled: bool = True,
         **wait_gen_kwargs: Any,
     ):
@@ -609,7 +614,7 @@ class Retrying:
         self._sleep = sleep
         self._enabled = enabled
         self._wait_gen_kwargs = wait_gen_kwargs
-        self._state: Optional[RetryState] = None
+        self._state: RetryState | None = None
 
     @property
     def statistics(self) -> dict:

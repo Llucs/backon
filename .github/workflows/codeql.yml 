@@ -23,6 +23,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # O CodeQL deve ser inicializado antes de instalar as dependências
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -32,11 +38,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install .
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

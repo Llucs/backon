@@ -30,7 +30,7 @@ from backon._conditions import (
     stop_never,
 )
 from backon._jitter import full_jitter
-from backon._state import Attempt, RetryState, TryAgain
+from backon._state import Attempt, RetryCallState, RetryState, TryAgain
 from backon._typing import (
     _Handler,
     _Jitterer,
@@ -123,18 +123,28 @@ def _retry_loop_sync(
     raise_on_giveup,
     max_time,
     wait_gen_kwargs,
+    before=None,
+    after=None,
+    _holder=None,
 ):
     state = RetryState(target=target)
     start_time = _now()
     state.start_time = start_time
+    call_state = RetryCallState(fn=target, start_time=start_time)
+    if _holder is not None:
+        _holder["state"] = state
+        _holder["call_state"] = call_state
     wait = _init_wait_gen(wait_gen, wait_gen_kwargs)
 
     while True:
         state.tries += 1
         state.elapsed = _now() - start_time
+        call_state.attempt_number = state.tries
         outcome = Attempt(tries=state.tries, elapsed=state.elapsed)
 
         _call_hdlrs(on_attempt, state.to_details())
+
+        _call_hdlrs(before, state.to_details())
 
         try:
             ret = target()
@@ -142,6 +152,8 @@ def _retry_loop_sync(
             outcome.exception = None
             outcome.value = None
             state.outcome = outcome
+            call_state.outcome = outcome
+            call_state.outcome_timestamp = _now()
             try:
                 value = wait.send(None)
                 if jitter is not None:
@@ -166,6 +178,10 @@ def _retry_loop_sync(
             outcome.value = None
             state.outcome = outcome
             state.idle_for += state.elapsed
+            call_state.outcome = outcome
+            call_state.outcome_timestamp = _now()
+            call_state.idle_for += call_state.elapsed
+            _call_hdlrs(after, state.to_details())
 
             if not condition(state):
                 details = state.to_details()
@@ -203,6 +219,7 @@ def _retry_loop_sync(
                     raise exc from None
                 return None
 
+            call_state.upcoming_sleep = seconds
             details = state.to_details()
             details["wait"] = seconds
             details["exception"] = exc
@@ -210,10 +227,14 @@ def _retry_loop_sync(
             _call_hdlrs(on_backoff, details)
             if seconds > 0:
                 sleep(seconds)
+            call_state.idle_for = call_state.idle_for + seconds
         else:
             outcome.value = ret
             outcome.exception = None
             state.outcome = outcome
+            call_state.outcome = outcome
+            call_state.outcome_timestamp = _now()
+            _call_hdlrs(after, state.to_details())
 
             if condition(state):
                 if stop(state):
@@ -236,6 +257,7 @@ def _retry_loop_sync(
                     _call_hdlrs(on_giveup, details)
                     return ret
 
+                call_state.upcoming_sleep = seconds
                 details = state.to_details()
                 details["wait"] = seconds
                 details["value"] = ret
@@ -243,6 +265,7 @@ def _retry_loop_sync(
                 _call_hdlrs(on_backoff, details)
                 if seconds > 0:
                     sleep(seconds)
+                call_state.idle_for = call_state.idle_for + seconds
             else:
                 details = state.to_details()
                 details["value"] = ret
@@ -266,18 +289,28 @@ async def _retry_loop_async(
     raise_on_giveup,
     max_time,
     wait_gen_kwargs,
+    before=None,
+    after=None,
+    _holder=None,
 ):
     state = RetryState(target=target)
     start_time = _now()
     state.start_time = start_time
+    call_state = RetryCallState(fn=target, start_time=start_time)
+    if _holder is not None:
+        _holder["state"] = state
+        _holder["call_state"] = call_state
     wait = _init_wait_gen(wait_gen, wait_gen_kwargs)
 
     while True:
         state.tries += 1
         state.elapsed = _now() - start_time
+        call_state.attempt_number = state.tries
         outcome = Attempt(tries=state.tries, elapsed=state.elapsed)
 
         await _call_hdlrs_async(on_attempt, state.to_details())
+
+        _call_hdlrs(before, state.to_details())
 
         try:
             ret = await target()
@@ -285,6 +318,8 @@ async def _retry_loop_async(
             outcome.exception = None
             outcome.value = None
             state.outcome = outcome
+            call_state.outcome = outcome
+            call_state.outcome_timestamp = _now()
             try:
                 value = wait.send(None)
                 if jitter is not None:
@@ -309,6 +344,10 @@ async def _retry_loop_async(
             outcome.value = None
             state.outcome = outcome
             state.idle_for += state.elapsed
+            call_state.outcome = outcome
+            call_state.outcome_timestamp = _now()
+            call_state.idle_for += call_state.elapsed
+            await _call_hdlrs_async(after, state.to_details())
 
             if not condition(state):
                 details = state.to_details()
@@ -346,6 +385,7 @@ async def _retry_loop_async(
                     raise exc from None
                 return None
 
+            call_state.upcoming_sleep = seconds
             details = state.to_details()
             details["wait"] = seconds
             details["exception"] = exc
@@ -353,10 +393,14 @@ async def _retry_loop_async(
             await _call_hdlrs_async(on_backoff, details)
             if seconds > 0:
                 await sleep(seconds)
+            call_state.idle_for = call_state.idle_for + seconds
         else:
             outcome.value = ret
             outcome.exception = None
             state.outcome = outcome
+            call_state.outcome = outcome
+            call_state.outcome_timestamp = _now()
+            await _call_hdlrs_async(after, state.to_details())
 
             if condition(state):
                 if stop(state):
@@ -379,6 +423,7 @@ async def _retry_loop_async(
                     await _call_hdlrs_async(on_giveup, details)
                     return ret
 
+                call_state.upcoming_sleep = seconds
                 details = state.to_details()
                 details["wait"] = seconds
                 details["value"] = ret
@@ -386,6 +431,7 @@ async def _retry_loop_async(
                 await _call_hdlrs_async(on_backoff, details)
                 if seconds > 0:
                     await sleep(seconds)
+                call_state.idle_for = call_state.idle_for + seconds
             else:
                 details = state.to_details()
                 details["value"] = ret
@@ -411,6 +457,9 @@ def _retry_sync_inner(
     max_time=None,
     wait_gen_kwargs=None,
     max_tries=None,
+    before=None,
+    after=None,
+    _holder=None,
 ):
     if not is_enabled():
         return target()
@@ -437,6 +486,9 @@ def _retry_sync_inner(
         raise_on_giveup,
         max_time,
         wait_gen_kwargs,
+        before=before,
+        after=after,
+        _holder=_holder,
     )
 
 
@@ -458,6 +510,9 @@ async def _retry_async_inner(
     max_time=None,
     wait_gen_kwargs=None,
     max_tries=None,
+    before=None,
+    after=None,
+    _holder=None,
 ):
     if not is_enabled():
         return await target()
@@ -484,6 +539,9 @@ async def _retry_async_inner(
         raise_on_giveup,
         max_time,
         wait_gen_kwargs,
+        before=before,
+        after=after,
+        _holder=_holder,
     )
 
 
@@ -511,6 +569,9 @@ def _retry_sync(
     giveup_log_level: int = logging.ERROR,
     sleep: Callable[[float], Any] | None = None,
     wait_gen_kwargs: dict | None = None,
+    before: _Handler | Iterable[_Handler] | None = None,
+    after: _Handler | Iterable[_Handler] | None = None,
+    _holder: dict | None = None,
 ) -> Any:
     if wait_gen_kwargs is None:
         wait_gen_kwargs = {}
@@ -533,6 +594,8 @@ def _retry_sync(
     )
     on_attempt = _config_handlers(on_attempt)
     before_sleep = _config_handlers(before_sleep)
+    before = _config_handlers(before)
+    after = _config_handlers(after)
 
     if condition is None:
         condition = _make_default_condition(exception, giveup, predicate)
@@ -557,6 +620,9 @@ def _retry_sync(
         raise_on_giveup,
         max_time,
         wait_gen_kwargs,
+        before=before,
+        after=after,
+        _holder=_holder,
     )
 
 
@@ -584,6 +650,9 @@ async def _retry_async(
     giveup_log_level: int = logging.ERROR,
     sleep: Callable[[float], Any] | None = None,
     wait_gen_kwargs: dict | None = None,
+    before: _Handler | Iterable[_Handler] | None = None,
+    after: _Handler | Iterable[_Handler] | None = None,
+    _holder: dict | None = None,
 ) -> Any:
     if wait_gen_kwargs is None:
         wait_gen_kwargs = {}
@@ -606,6 +675,8 @@ async def _retry_async(
     )
     on_attempt = _config_handlers(on_attempt)
     before_sleep = _config_handlers(before_sleep)
+    before = _config_handlers(before)
+    after = _config_handlers(after)
 
     if condition is None:
         condition = _make_default_condition(exception, giveup, predicate)
@@ -630,6 +701,9 @@ async def _retry_async(
         raise_on_giveup,
         max_time,
         wait_gen_kwargs,
+        before=before,
+        after=after,
+        _holder=_holder,
     )
 
 
@@ -657,6 +731,8 @@ def retry(
     giveup_log_level: int = logging.ERROR,
     sleep: Callable[[float], Any] | None = None,
     name: str = "",
+    before: _Handler | Iterable[_Handler] | None = None,
+    after: _Handler | Iterable[_Handler] | None = None,
     **wait_gen_kwargs: Any,
 ) -> Any:
     if inspect.iscoroutinefunction(target):
@@ -683,6 +759,8 @@ def retry(
             giveup_log_level=giveup_log_level,
             sleep=sleep,
             wait_gen_kwargs=wait_gen_kwargs,
+            before=before,
+            after=after,
         )
     return _retry_sync(
         target,
@@ -707,6 +785,8 @@ def retry(
         giveup_log_level=giveup_log_level,
         sleep=sleep,
         wait_gen_kwargs=wait_gen_kwargs,
+        before=before,
+        after=after,
     )
 
 
@@ -763,6 +843,8 @@ class Retrying:
         sleep: Callable[[float], Any] | None = None,
         enabled: bool = True,
         name: str = "",
+        before: _Handler | Iterable[_Handler] | None = None,
+        after: _Handler | Iterable[_Handler] | None = None,
         **wait_gen_kwargs: Any,
     ):
         self._wait_gen = wait_gen
@@ -787,14 +869,23 @@ class Retrying:
         self._sleep = sleep
         self._enabled = enabled
         self._name = name
+        self._before = before
+        self._after = after
         self._wait_gen_kwargs = wait_gen_kwargs
         self._state: RetryState | None = None
+        self._call_state: RetryCallState | None = None
 
     @property
     def statistics(self) -> dict:
-        if self._state is None:
-            return {}
-        return self._state.statistics
+        if self._call_state is not None:
+            return self._call_state.statistics
+        if self._state is not None:
+            return self._state.statistics
+        return {}
+
+    @property
+    def call_state(self) -> RetryCallState | None:
+        return self._call_state
 
     @property
     def enabled(self) -> bool:
@@ -903,6 +994,8 @@ class Retrying:
             sleep=self._sleep,
             enabled=self._enabled,
             name=self._name,
+            before=self._before,
+            after=self._after,
             **self._wait_gen_kwargs,
         )
 
@@ -916,30 +1009,39 @@ class Retrying:
         def wrapped():
             return target(*args, **kwargs)
 
-        return _retry_sync(
-            wrapped,
-            self._wait_gen,
-            predicate=self._predicate,
-            exception=self._exception,
-            max_tries=self._max_tries,
-            max_time=self._max_time,
-            jitter=self._jitter,
-            giveup=self._giveup,
-            condition=self._condition,
-            stop=self._stop,
-            on_success=self._on_success,
-            on_backoff=self._on_backoff,
-            on_giveup=self._on_giveup,
-            on_attempt=self._on_attempt,
-            before_sleep=self._before_sleep,
-            retry_error_callback=self._retry_error_callback,
-            raise_on_giveup=self._raise_on_giveup,
-            logger=self._logger,
-            backoff_log_level=self._backoff_log_level,
-            giveup_log_level=self._giveup_log_level,
-            sleep=self._sleep,
-            wait_gen_kwargs=self._wait_gen_kwargs,
-        )
+        _holder: dict = {}
+        try:
+            result = _retry_sync(
+                wrapped,
+                self._wait_gen,
+                predicate=self._predicate,
+                exception=self._exception,
+                max_tries=self._max_tries,
+                max_time=self._max_time,
+                jitter=self._jitter,
+                giveup=self._giveup,
+                condition=self._condition,
+                stop=self._stop,
+                on_success=self._on_success,
+                on_backoff=self._on_backoff,
+                on_giveup=self._on_giveup,
+                on_attempt=self._on_attempt,
+                before_sleep=self._before_sleep,
+                retry_error_callback=self._retry_error_callback,
+                raise_on_giveup=self._raise_on_giveup,
+                logger=self._logger,
+                backoff_log_level=self._backoff_log_level,
+                giveup_log_level=self._giveup_log_level,
+                sleep=self._sleep,
+                wait_gen_kwargs=self._wait_gen_kwargs,
+                before=self._before,
+                after=self._after,
+                _holder=_holder,
+            )
+            return result
+        finally:
+            self._state = _holder.get("state")
+            self._call_state = _holder.get("call_state")
 
     async def async_call(
         self, target: Callable[..., Any], *args: Any, **kwargs: Any
@@ -947,30 +1049,39 @@ class Retrying:
         async def wrapped():
             return await target(*args, **kwargs)
 
-        return await _retry_async(
-            wrapped,
-            self._wait_gen,
-            predicate=self._predicate,
-            exception=self._exception,
-            max_tries=self._max_tries,
-            max_time=self._max_time,
-            jitter=self._jitter,
-            giveup=self._giveup,
-            condition=self._condition,
-            stop=self._stop,
-            on_success=self._on_success,
-            on_backoff=self._on_backoff,
-            on_giveup=self._on_giveup,
-            on_attempt=self._on_attempt,
-            before_sleep=self._before_sleep,
-            retry_error_callback=self._retry_error_callback,
-            raise_on_giveup=self._raise_on_giveup,
-            logger=self._logger,
-            backoff_log_level=self._backoff_log_level,
-            giveup_log_level=self._giveup_log_level,
-            sleep=self._sleep,
-            wait_gen_kwargs=self._wait_gen_kwargs,
-        )
+        _holder: dict = {}
+        try:
+            result = await _retry_async(
+                wrapped,
+                self._wait_gen,
+                predicate=self._predicate,
+                exception=self._exception,
+                max_tries=self._max_tries,
+                max_time=self._max_time,
+                jitter=self._jitter,
+                giveup=self._giveup,
+                condition=self._condition,
+                stop=self._stop,
+                on_success=self._on_success,
+                on_backoff=self._on_backoff,
+                on_giveup=self._on_giveup,
+                on_attempt=self._on_attempt,
+                before_sleep=self._before_sleep,
+                retry_error_callback=self._retry_error_callback,
+                raise_on_giveup=self._raise_on_giveup,
+                logger=self._logger,
+                backoff_log_level=self._backoff_log_level,
+                giveup_log_level=self._giveup_log_level,
+                sleep=self._sleep,
+                wait_gen_kwargs=self._wait_gen_kwargs,
+                before=self._before,
+                after=self._after,
+                _holder=_holder,
+            )
+            return result
+        finally:
+            self._state = _holder.get("state")
+            self._call_state = _holder.get("call_state")
 
 
 def sleep_using_event(event) -> Callable[[float], None]:

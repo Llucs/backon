@@ -25,7 +25,7 @@ from backon._conditions import (
 from backon._decorator import on_exception, on_predicate
 from backon._jitter import full_jitter, random_jitter
 from backon._retry import Retrying, retry, sleep_using_event
-from backon._state import RetryError, RetryState, TryAgain
+from backon._state import RetryCallState, RetryError, RetryState, TryAgain
 from backon._wait_gen import (
     constant,
     decay,
@@ -66,6 +66,7 @@ __all__ = [
     "TryAgain",
     "RetryError",
     "RetryState",
+    "RetryCallState",
     "Stop",
     "RetryCondition",
     "stop_after_attempt",

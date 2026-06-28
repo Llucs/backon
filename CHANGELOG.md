@@ -1,3 +1,12 @@
+## 3.4.0 - 2026-06-28
+
+- Add `RetryCallState` dataclass with `elapsed`, `statistics`, `seconds_since_start`, `to_details()` for per-call introspection
+- Add `before`/`after` hooks in `retry()`, `Retrying()`, `on_predicate()`, `on_exception()`
+- Add `Retrying.call_state` property returning current `RetryCallState`
+- Add `Retrying.statistics` property returning call state statistics (attempt_number, elapsed, idle_for, start_time)
+- Wire `RetryCallState` through `_retry_loop_sync`/`_retry_loop_async` for future instrumentation
+- Export `RetryCallState` from `backon` public API
+
 ## 3.3.0 - 2026-06-28
 
 - Optimize performance: 7.6x faster than tenacity and backoff in retry benchmarks

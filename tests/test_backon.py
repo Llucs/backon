@@ -50,6 +50,7 @@ class TestImports:
             "TryAgain",
             "RetryError",
             "RetryState",
+            "RetryCallState",
             "Stop",
             "RetryCondition",
             "stop_after_attempt",

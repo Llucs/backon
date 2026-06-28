@@ -54,10 +54,13 @@ def on_predicate(
     retry_error_callback: Callable[[dict], Any] | None = None,
     raise_on_giveup: bool = True,
     sleep: Callable[[float], Any] | None = None,
+    before: _Handler | Iterable[_Handler] | None = None,
+    after: _Handler | Iterable[_Handler] | None = None,
     **wait_gen_kwargs: Any,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorate(target: Callable[P, R]) -> Callable[P, R]:
         nonlocal logger, on_success, on_backoff, on_giveup, on_attempt, before_sleep
+        nonlocal before, after
 
         logger = _prepare_logger(logger)
         on_success = _config_handlers(on_success)
@@ -75,6 +78,8 @@ def on_predicate(
         )
         on_attempt = _config_handlers(on_attempt)
         before_sleep = _config_handlers(before_sleep)
+        before = _config_handlers(before)
+        after = _config_handlers(after)
 
         condition: RetryCondition = retry_if_result(predicate)
 
@@ -107,6 +112,8 @@ def on_predicate(
                         retry_error_callback=retry_error_callback,
                         raise_on_giveup=raise_on_giveup,
                         wait_gen_kwargs=wait_gen_kwargs,
+                        before=before,
+                        after=after,
                     ),
                 )
 
@@ -137,6 +144,8 @@ def on_predicate(
                         retry_error_callback=retry_error_callback,
                         raise_on_giveup=raise_on_giveup,
                         wait_gen_kwargs=wait_gen_kwargs,
+                        before=before,
+                        after=after,
                     ),
                 )
 
@@ -164,10 +173,13 @@ def on_exception(
     backoff_log_level: int = logging.INFO,
     giveup_log_level: int = logging.ERROR,
     sleep: Callable[[float], Any] | None = None,
+    before: _Handler | Iterable[_Handler] | None = None,
+    after: _Handler | Iterable[_Handler] | None = None,
     **wait_gen_kwargs: Any,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorate(target: Callable[P, R]) -> Callable[P, R]:
         nonlocal logger, on_success, on_backoff, on_giveup, on_attempt, before_sleep
+        nonlocal before, after
 
         logger = _prepare_logger(logger)
         on_success = _config_handlers(on_success)
@@ -185,6 +197,8 @@ def on_exception(
         )
         on_attempt = _config_handlers(on_attempt)
         before_sleep = _config_handlers(before_sleep)
+        before = _config_handlers(before)
+        after = _config_handlers(after)
 
         exc_types: tuple[type[Exception], ...]
         if isinstance(exception, type):
@@ -233,6 +247,8 @@ def on_exception(
                         retry_error_callback=retry_error_callback,
                         raise_on_giveup=raise_on_giveup,
                         wait_gen_kwargs=wait_gen_kwargs,
+                        before=before,
+                        after=after,
                     ),
                 )
 
@@ -263,6 +279,8 @@ def on_exception(
                         retry_error_callback=retry_error_callback,
                         raise_on_giveup=raise_on_giveup,
                         wait_gen_kwargs=wait_gen_kwargs,
+                        before=before,
+                        after=after,
                     ),
                 )
 

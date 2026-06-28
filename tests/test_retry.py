@@ -196,7 +196,7 @@ class TestRetryingContextManager:
             jitter=None,
             interval=0.01,
         ) as r:
-            result = await r.call(flaky)
+            result = await r.async_call(flaky)
 
         assert result == "ok"
         assert len(calls) == 3

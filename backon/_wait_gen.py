@@ -1,5 +1,6 @@
 import itertools
 import math
+import random
 from typing import Any, Callable, Generator, Iterable, Optional, Sequence, Union
 
 
@@ -60,3 +61,59 @@ def runtime(*, value: Callable[[Any], float]) -> Generator[float, None, None]:
     ret_or_exc = yield 0.0
     while True:
         ret_or_exc = yield value(ret_or_exc)
+
+
+def wait_random_exponential(
+    multiplier: float = 1,
+    max_value: Optional[float] = None,
+    exp_base: float = 2,
+    min_value: float = 0,
+) -> Generator[float, None, None]:
+    yield 0.0
+    n = 0
+    while True:
+        a = multiplier * exp_base**n
+        if max_value is not None and a > max_value:
+            a = max_value
+        if a < min_value:
+            a = min_value
+        yield random.uniform(0, a)
+        n += 1
+
+
+def wait_incrementing(
+    start: float = 1, increment: float = 1, max_value: Optional[float] = None
+) -> Generator[float, None, None]:
+    yield 0.0
+    n = 0
+    while True:
+        a = start + n * increment
+        if max_value is not None and a > max_value:
+            yield max_value
+        else:
+            yield a
+        n += 1
+
+
+def wait_chain(
+    *generators: Generator[float, None, None],
+) -> Generator[float, None, None]:
+    yield 0.0
+    for gen in generators:
+        next(gen)
+        val = gen.send(None)
+        yield val
+        while True:
+            try:
+                val = gen.send(None)
+                yield val
+            except StopIteration:
+                break
+
+
+def wait_exception(
+    value: Callable[[Any], float],
+) -> Generator[float, None, None]:
+    exc = yield 0.0
+    while True:
+        exc = yield value(exc)

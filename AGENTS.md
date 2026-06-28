@@ -2,9 +2,9 @@
 
 ## Versioning
 
-- Update `__version__` in `backon/__init__.py` and `version` in `pyproject.toml` on every change.
+- Update `version` in `pyproject.toml` on every change — this is the single source of truth.
+- `__version__` in `backon/__init__.py` is read dynamically from `importlib.metadata`.
 - Follow [SemVer](https://semver.org/): bump major for breaking changes, minor for features, patch for fixes.
-- Keep the version in sync between both files.
 
 ## Before Every Commit
 

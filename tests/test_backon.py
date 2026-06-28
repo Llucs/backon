@@ -21,7 +21,8 @@ class TestImports:
         assert hasattr(backon, "random_jitter")
 
     def test_version(self):
-        assert backon.__version__ == "3.0.0"
+        assert isinstance(backon.__version__, str)
+        assert len(backon.__version__) > 0
 
     def test_details_importable(self):
         assert Details is not None
@@ -37,9 +38,35 @@ class TestImports:
             "decay",
             "fibo",
             "runtime",
+            "wait_random_exponential",
+            "wait_incrementing",
+            "wait_chain",
+            "wait_exception",
             "full_jitter",
             "random_jitter",
             "disable",
             "enable",
+            "sleep_using_event",
+            "TryAgain",
+            "RetryError",
+            "RetryState",
+            "Stop",
+            "RetryCondition",
+            "stop_after_attempt",
+            "stop_after_delay",
+            "stop_before_delay",
+            "stop_all",
+            "stop_any",
+            "stop_never",
+            "stop_when_event_set",
+            "retry_if_exception_type",
+            "retry_if_exception",
+            "retry_if_exception_message",
+            "retry_if_result",
+            "retry_if_not_result",
+            "retry_all",
+            "retry_any",
+            "retry_always",
+            "retry_never",
         }
         assert set(backon.__all__) == expected

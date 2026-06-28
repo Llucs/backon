@@ -326,3 +326,5 @@ pdm run pytest tests/
 ## License
 
 [MIT](https://github.com/Llucs/backon/blob/main/LICENSE)
+
+Made by Llucs with ❤️

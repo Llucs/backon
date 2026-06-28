@@ -1,5 +1,5 @@
-import asyncio
 import functools
+import inspect
 
 from backon._common import (
     _elapsed,
@@ -18,7 +18,7 @@ def _unwrap(target):
 
 
 def _ensure_coroutine(coro_or_func):
-    if asyncio.iscoroutinefunction(coro_or_func):
+    if inspect.iscoroutinefunction(coro_or_func):
         return coro_or_func
     else:
 
@@ -67,10 +67,10 @@ def retry_predicate(
     on_giveup = _ensure_coroutines(on_giveup)
     on_attempt = _ensure_coroutines(on_attempt)
 
-    assert not asyncio.iscoroutinefunction(max_tries)
-    assert not asyncio.iscoroutinefunction(jitter)
+    assert not inspect.iscoroutinefunction(max_tries)
+    assert not inspect.iscoroutinefunction(jitter)
 
-    assert asyncio.iscoroutinefunction(target)
+    assert inspect.iscoroutinefunction(target)
 
     @functools.wraps(target)
     async def retry(*args, **kwargs):
@@ -150,8 +150,8 @@ def retry_exception(
     on_attempt = _ensure_coroutines(on_attempt)
     giveup = _ensure_coroutine(giveup)
 
-    assert not asyncio.iscoroutinefunction(max_tries)
-    assert not asyncio.iscoroutinefunction(jitter)
+    assert not inspect.iscoroutinefunction(max_tries)
+    assert not inspect.iscoroutinefunction(jitter)
 
     @functools.wraps(target)
     async def retry(*args, **kwargs):

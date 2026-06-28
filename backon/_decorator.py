@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import inspect
 import logging
 import operator
 import time as time_module
@@ -74,7 +75,7 @@ def on_predicate(
 
         condition = retry_if_result(predicate)
 
-        if asyncio.iscoroutinefunction(target):
+        if inspect.iscoroutinefunction(target):
             _sleep = sleep or asyncio.sleep
 
             @functools.wraps(target)
@@ -193,7 +194,7 @@ def on_exception(
 
             condition = _condition
 
-        if asyncio.iscoroutinefunction(target):
+        if inspect.iscoroutinefunction(target):
             _sleep = sleep or asyncio.sleep
 
             @functools.wraps(target)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 import operator
 import time as time_module
@@ -52,7 +53,7 @@ async def _async_call_handlers(handlers, details):
     if not handlers:
         return
     for handler in handlers:
-        if asyncio.iscoroutinefunction(handler):
+        if inspect.iscoroutinefunction(handler):
             await handler(details)
         else:
             handler(details)
@@ -514,7 +515,7 @@ def retry(
     sleep: Callable[[float], Any] | None = None,
     **wait_gen_kwargs: Any,
 ) -> Any:
-    if asyncio.iscoroutinefunction(target):
+    if inspect.iscoroutinefunction(target):
         return _retry_async(
             target,
             wait_gen,
@@ -643,7 +644,7 @@ class Retrying:
         pass
 
     def call(self, target: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
-        if asyncio.iscoroutinefunction(target):
+        if inspect.iscoroutinefunction(target):
             raise TypeError(
                 "Use await with Retrying.call() for async functions, "
                 "or pass a sync function"

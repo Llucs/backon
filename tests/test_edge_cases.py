@@ -8,14 +8,14 @@ from backon._common import _maybe_call
 from backon._conditions import (
     RetryCondition,
     Stop,
+    retry_always,
     retry_if_exception_cause_type,
     retry_if_exception_message,
     retry_if_not_exception_message,
     retry_if_not_exception_type,
     retry_if_not_result,
-    retry_unless_exception_type,
-    retry_always,
     retry_never,
+    retry_unless_exception_type,
     stop_before_delay,
     stop_never,
     stop_when_event_set,
@@ -26,8 +26,6 @@ from backon._wait_gen import (
     _Wait,
     decay,
     expo,
-    wait_chain,
-    wait_exception,
     wait_exponential_jitter,
     wait_incrementing,
     wait_none,
@@ -345,7 +343,7 @@ class TestWaitGenEdgeCases:
         assert val == 2.0
 
     def test_wait_chain(self):
-        from backon._wait_gen import _wait_chain, _constant
+        from backon._wait_gen import _constant, _wait_chain
 
         def g1():
             yield 0
@@ -650,13 +648,6 @@ class TestWaitGenComposition:
         gen.send(None)
         val = gen.send(None)
         assert val == 2.0
-
-    def test_combined_wait_with_jitter(self):
-        combined = expo + backon.constant
-        gen = combined()
-        gen.send(None)
-        val = gen.send(None)
-        assert val >= 0
 
     def test_combined_wait_with_jitter(self):
         combined = expo + backon.constant

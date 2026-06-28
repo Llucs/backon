@@ -1,3 +1,21 @@
+## 3.2.0 - 2026-06-28
+
+- Add `|` / `&` operator overloading for `Stop` and `RetryCondition` composition
+- Add `+` operator for wait generator composition (e.g. `expo + constant`)
+- Add iterator API: `for attempt in Retrying(...): with attempt: fn()`
+- Add `Retrying.copy()` method for creating modified copies
+- Add `name` parameter to `retry()` and `Retrying()` for identification
+- Add `retry_if_not_exception_type`, `retry_unless_exception_type` conditions
+- Add `retry_if_not_exception_message(match, regex)` condition
+- Add `retry_if_exception_cause_type(exc_types)` condition (walks `__cause__` chain)
+- Add `wait_random(min, max)` — uniform random wait generator
+- Add `wait_exponential_jitter(initial, max, jitter)` — exponential backoff with jitter
+- Add `wait_none()` — no-wait sentinel generator
+- Add `_to_seconds()` helper with `timedelta` support for `max_time`
+- Add `AttemptResult` dataclass for iterator API results
+- Use `ParamSpec` for proper decorator type signature preservation
+- Update AGENTS.md to reflect new versioning rules
+
 ## 3.1.0 - 2026-06-28
 
 - Add functional API `retry()` — call `backon.retry(fn, backon.constant, max_tries=5, ...)`

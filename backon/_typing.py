@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Callable, Coroutine, Generator, Sequence
-from typing import Any, TypedDict, TypeVar, Union
+from typing import Any, ParamSpec, TypedDict, TypeVar, Union
 
 
 class _Details(TypedDict):
@@ -17,7 +17,11 @@ class Details(_Details, total=False):
     exception: Exception
 
 
+P = ParamSpec("P")
+
 T = TypeVar("T")
+
+R = TypeVar("R")
 
 _CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
 _Handler = (

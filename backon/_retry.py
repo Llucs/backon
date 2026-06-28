@@ -6,6 +6,7 @@ import logging
 import operator
 import time as time_module
 from collections.abc import Callable, Iterable
+from datetime import timedelta
 from typing import Any
 
 from backon._common import (
@@ -14,6 +15,7 @@ from backon._common import (
     _init_wait_gen,
     _log_backoff,
     _log_giveup,
+    _maybe_call,
     _next_wait,
     _now,
     _prepare_logger,
@@ -59,12 +61,18 @@ async def _async_call_handlers(handlers, details):
             handler(details)
 
 
+def _to_seconds(value: float | int | timedelta) -> float:
+    if isinstance(value, timedelta):
+        return value.total_seconds()
+    return float(value)
+
+
 def _make_default_stop(max_tries, max_time):
     stops = []
     if max_tries is not None:
         stops.append(stop_after_attempt(max_tries))
     if max_time is not None:
-        stops.append(stop_after_delay(max_time))
+        stops.append(stop_after_delay(_to_seconds(max_time)))
     if not stops:
         return stop_never()
     return stop_any(*stops)
@@ -513,6 +521,7 @@ def retry(
     backoff_log_level: int = logging.INFO,
     giveup_log_level: int = logging.ERROR,
     sleep: Callable[[float], Any] | None = None,
+    name: str = "",
     **wait_gen_kwargs: Any,
 ) -> Any:
     if inspect.iscoroutinefunction(target):
@@ -566,6 +575,33 @@ def retry(
     )
 
 
+class _RetryAttempt:
+    def __init__(self):
+        self._exception: BaseException | None = None
+        self._value: Any = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None:
+            self._exception = exc_val
+            return True
+        return False
+
+    @property
+    def failed(self) -> bool:
+        return self._exception is not None
+
+    @property
+    def exception(self) -> BaseException | None:
+        return self._exception
+
+    @property
+    def value(self) -> Any:
+        return self._value
+
+
 class Retrying:
     def __init__(
         self,
@@ -591,6 +627,7 @@ class Retrying:
         giveup_log_level: int = logging.ERROR,
         sleep: Callable[[float], Any] | None = None,
         enabled: bool = True,
+        name: str = "",
         **wait_gen_kwargs: Any,
     ):
         self._wait_gen = wait_gen
@@ -614,6 +651,7 @@ class Retrying:
         self._giveup_log_level = giveup_log_level
         self._sleep = sleep
         self._enabled = enabled
+        self._name = name
         self._wait_gen_kwargs = wait_gen_kwargs
         self._state: RetryState | None = None
 
@@ -642,6 +680,95 @@ class Retrying:
 
     async def __aexit__(self, *exc_info):
         pass
+
+    def __iter__(self):
+        self._iter_state = RetryState(target=lambda: None)
+        self._iter_state.start_time = _now()
+        self._iter_state.tries = 0
+        self._last_attempt: _RetryAttempt | None = None
+        max_tries = _maybe_call(self._max_tries)
+        max_time = _maybe_call(self._max_time)
+        self._iter_wait = _init_wait_gen(self._wait_gen, self._wait_gen_kwargs)
+        self._iter_stop = self._stop or _make_default_stop(max_tries, max_time)
+        self._iter_condition = self._condition or _make_default_condition(
+            self._exception, self._giveup, self._predicate
+        )
+        return self
+
+    def __next__(self) -> _RetryAttempt:
+        if self._last_attempt is not None:
+            if not self._last_attempt.failed:
+                raise StopIteration
+
+            exc = self._last_attempt._exception
+            assert exc is not None
+            outcome = Attempt(
+                tries=self._iter_state.tries,
+                elapsed=self._iter_state.elapsed,
+                exception=exc,
+            )
+            self._iter_state.outcome = outcome
+
+            if not self._iter_condition(self._iter_state):
+                if self._raise_on_giveup:
+                    raise exc
+                raise StopIteration
+
+            if self._iter_stop(self._iter_state):
+                if self._raise_on_giveup:
+                    raise exc
+                raise StopIteration
+
+            max_time = _maybe_call(self._max_time)
+            try:
+                seconds = _next_wait(
+                    self._iter_wait,
+                    exc,
+                    self._jitter,
+                    self._iter_state.elapsed,
+                    max_time,
+                )
+            except StopIteration:
+                if self._raise_on_giveup:
+                    raise exc from None
+                raise StopIteration from None
+
+            sleep_fn = self._sleep or time_module.sleep
+            sleep_fn(seconds)
+
+        self._iter_state.tries += 1
+        self._iter_state.elapsed = _elapsed(self._iter_state.start_time)
+
+        attempt = _RetryAttempt()
+        self._last_attempt = attempt
+        return attempt
+
+    def copy(self) -> Retrying:
+        return Retrying(
+            self._wait_gen,
+            predicate=self._predicate,
+            exception=self._exception,
+            max_tries=self._max_tries,
+            max_time=self._max_time,
+            jitter=self._jitter,
+            giveup=self._giveup,
+            condition=self._condition,
+            stop=self._stop,
+            on_success=self._on_success,
+            on_backoff=self._on_backoff,
+            on_giveup=self._on_giveup,
+            on_attempt=self._on_attempt,
+            before_sleep=self._before_sleep,
+            retry_error_callback=self._retry_error_callback,
+            raise_on_giveup=self._raise_on_giveup,
+            logger=self._logger,
+            backoff_log_level=self._backoff_log_level,
+            giveup_log_level=self._giveup_log_level,
+            sleep=self._sleep,
+            enabled=self._enabled,
+            name=self._name,
+            **self._wait_gen_kwargs,
+        )
 
     def call(self, target: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         if inspect.iscoroutinefunction(target):

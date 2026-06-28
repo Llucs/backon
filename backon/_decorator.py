@@ -5,7 +5,7 @@ import logging
 import operator
 import time as time_module
 from collections.abc import Callable, Iterable
-from typing import Any
+from typing import Any, cast
 
 from backon._common import (
     _config_handlers,
@@ -16,13 +16,16 @@ from backon._common import (
     is_enabled,
 )
 from backon._conditions import (
+    RetryCondition,
     retry_if_exception_type,
     retry_if_result,
 )
 from backon._jitter import full_jitter
 from backon._retry import _retry_async, _retry_sync
+from backon._state import RetryState
 from backon._typing import (
-    _CallableT,
+    P,
+    R,
     _Handler,
     _Jitterer,
     _MaybeCallable,
@@ -52,8 +55,8 @@ def on_predicate(
     raise_on_giveup: bool = True,
     sleep: Callable[[float], Any] | None = None,
     **wait_gen_kwargs: Any,
-) -> Callable[[_CallableT], _CallableT]:
-    def decorate(target):
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    def decorate(target: Callable[P, R]) -> Callable[P, R]:
         nonlocal logger, on_success, on_backoff, on_giveup, on_attempt, before_sleep
 
         logger = _prepare_logger(logger)
@@ -73,65 +76,71 @@ def on_predicate(
         on_attempt = _config_handlers(on_attempt)
         before_sleep = _config_handlers(before_sleep)
 
-        condition = retry_if_result(predicate)
+        condition: RetryCondition = retry_if_result(predicate)
 
         if inspect.iscoroutinefunction(target):
             _sleep = sleep or asyncio.sleep
 
             @functools.wraps(target)
-            async def wrapper(*args, **kwargs):
+            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 if not is_enabled():
-                    return await target(*args, **kwargs)
+                    return cast(R, await target(*args, **kwargs))
 
                 async def wrapped():
                     return await target(*args, **kwargs)
 
-                return await _retry_async(
-                    wrapped,
-                    wait_gen,
-                    condition=condition,
-                    max_tries=_maybe_call(max_tries),
-                    max_time=_maybe_call(max_time),
-                    jitter=jitter,
-                    on_success=on_success,
-                    on_backoff=on_backoff,
-                    on_giveup=on_giveup,
-                    on_attempt=on_attempt,
-                    before_sleep=before_sleep,
-                    sleep=_sleep,
-                    retry_error_callback=retry_error_callback,
-                    raise_on_giveup=raise_on_giveup,
-                    wait_gen_kwargs=wait_gen_kwargs,
+                return cast(
+                    R,
+                    await _retry_async(
+                        wrapped,
+                        wait_gen,
+                        condition=condition,
+                        max_tries=_maybe_call(max_tries),
+                        max_time=_maybe_call(max_time),
+                        jitter=jitter,
+                        on_success=on_success,
+                        on_backoff=on_backoff,
+                        on_giveup=on_giveup,
+                        on_attempt=on_attempt,
+                        before_sleep=before_sleep,
+                        sleep=_sleep,
+                        retry_error_callback=retry_error_callback,
+                        raise_on_giveup=raise_on_giveup,
+                        wait_gen_kwargs=wait_gen_kwargs,
+                    ),
                 )
 
-            return wrapper
+            return cast(Callable[P, R], wrapper)
         else:
             _sleep = sleep or time_module.sleep
 
             @functools.wraps(target)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 if not is_enabled():
-                    return target(*args, **kwargs)
+                    return cast(R, target(*args, **kwargs))
 
-                return _retry_sync(
-                    lambda: target(*args, **kwargs),
-                    wait_gen,
-                    condition=condition,
-                    max_tries=_maybe_call(max_tries),
-                    max_time=_maybe_call(max_time),
-                    jitter=jitter,
-                    on_success=on_success,
-                    on_backoff=on_backoff,
-                    on_giveup=on_giveup,
-                    on_attempt=on_attempt,
-                    before_sleep=before_sleep,
-                    sleep=_sleep,
-                    retry_error_callback=retry_error_callback,
-                    raise_on_giveup=raise_on_giveup,
-                    wait_gen_kwargs=wait_gen_kwargs,
+                return cast(
+                    R,
+                    _retry_sync(
+                        lambda: target(*args, **kwargs),
+                        wait_gen,
+                        condition=condition,
+                        max_tries=_maybe_call(max_tries),
+                        max_time=_maybe_call(max_time),
+                        jitter=jitter,
+                        on_success=on_success,
+                        on_backoff=on_backoff,
+                        on_giveup=on_giveup,
+                        on_attempt=on_attempt,
+                        before_sleep=before_sleep,
+                        sleep=_sleep,
+                        retry_error_callback=retry_error_callback,
+                        raise_on_giveup=raise_on_giveup,
+                        wait_gen_kwargs=wait_gen_kwargs,
+                    ),
                 )
 
-            return wrapper
+            return cast(Callable[P, R], wrapper)
 
     return decorate
 
@@ -156,8 +165,8 @@ def on_exception(
     giveup_log_level: int = logging.ERROR,
     sleep: Callable[[float], Any] | None = None,
     **wait_gen_kwargs: Any,
-) -> Callable[[_CallableT], _CallableT]:
-    def decorate(target):
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    def decorate(target: Callable[P, R]) -> Callable[P, R]:
         nonlocal logger, on_success, on_backoff, on_giveup, on_attempt, before_sleep
 
         logger = _prepare_logger(logger)
@@ -177,79 +186,86 @@ def on_exception(
         on_attempt = _config_handlers(on_attempt)
         before_sleep = _config_handlers(before_sleep)
 
+        exc_types: tuple[type[Exception], ...]
         if isinstance(exception, type):
             exc_types = (exception,)
         else:
             exc_types = tuple(exception)
 
-        condition = retry_if_exception_type(exc_types)
+        condition: RetryCondition = retry_if_exception_type(exc_types)
         if giveup is not None:
 
-            def _condition(state):
+            def _condition(state: RetryState) -> bool:
                 if not retry_if_exception_type(exc_types)(state):
                     return False
-                if state.outcome and state.outcome.exception:
+                if state.outcome and isinstance(state.outcome.exception, Exception):
                     return not giveup(state.outcome.exception)
                 return True
 
-            condition = _condition
+            condition = cast(RetryCondition, _condition)
 
         if inspect.iscoroutinefunction(target):
             _sleep = sleep or asyncio.sleep
 
             @functools.wraps(target)
-            async def wrapper(*args, **kwargs):
+            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 if not is_enabled():
-                    return await target(*args, **kwargs)
+                    return cast(R, await target(*args, **kwargs))
 
                 async def wrapped():
                     return await target(*args, **kwargs)
 
-                return await _retry_async(
-                    wrapped,
-                    wait_gen,
-                    condition=condition,
-                    max_tries=_maybe_call(max_tries),
-                    max_time=_maybe_call(max_time),
-                    jitter=jitter,
-                    on_success=on_success,
-                    on_backoff=on_backoff,
-                    on_giveup=on_giveup,
-                    on_attempt=on_attempt,
-                    before_sleep=before_sleep,
-                    sleep=_sleep,
-                    retry_error_callback=retry_error_callback,
-                    raise_on_giveup=raise_on_giveup,
-                    wait_gen_kwargs=wait_gen_kwargs,
+                return cast(
+                    R,
+                    await _retry_async(
+                        wrapped,
+                        wait_gen,
+                        condition=condition,
+                        max_tries=_maybe_call(max_tries),
+                        max_time=_maybe_call(max_time),
+                        jitter=jitter,
+                        on_success=on_success,
+                        on_backoff=on_backoff,
+                        on_giveup=on_giveup,
+                        on_attempt=on_attempt,
+                        before_sleep=before_sleep,
+                        sleep=_sleep,
+                        retry_error_callback=retry_error_callback,
+                        raise_on_giveup=raise_on_giveup,
+                        wait_gen_kwargs=wait_gen_kwargs,
+                    ),
                 )
 
-            return wrapper
+            return cast(Callable[P, R], wrapper)
         else:
             _sleep = sleep or time_module.sleep
 
             @functools.wraps(target)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 if not is_enabled():
-                    return target(*args, **kwargs)
+                    return cast(R, target(*args, **kwargs))
 
-                return _retry_sync(
-                    lambda: target(*args, **kwargs),
-                    wait_gen,
-                    condition=condition,
-                    max_tries=_maybe_call(max_tries),
-                    max_time=_maybe_call(max_time),
-                    jitter=jitter,
-                    on_success=on_success,
-                    on_backoff=on_backoff,
-                    on_giveup=on_giveup,
-                    on_attempt=on_attempt,
-                    before_sleep=before_sleep,
-                    sleep=_sleep,
-                    retry_error_callback=retry_error_callback,
-                    raise_on_giveup=raise_on_giveup,
-                    wait_gen_kwargs=wait_gen_kwargs,
+                return cast(
+                    R,
+                    _retry_sync(
+                        lambda: target(*args, **kwargs),
+                        wait_gen,
+                        condition=condition,
+                        max_tries=_maybe_call(max_tries),
+                        max_time=_maybe_call(max_time),
+                        jitter=jitter,
+                        on_success=on_success,
+                        on_backoff=on_backoff,
+                        on_giveup=on_giveup,
+                        on_attempt=on_attempt,
+                        before_sleep=before_sleep,
+                        sleep=_sleep,
+                        retry_error_callback=retry_error_callback,
+                        raise_on_giveup=raise_on_giveup,
+                        wait_gen_kwargs=wait_gen_kwargs,
+                    ),
                 )
 
-            return wrapper
+            return cast(Callable[P, R], wrapper)
 
     return decorate

@@ -36,6 +36,12 @@ class Attempt:
 
 
 @dataclass
+class AttemptResult:
+    value: Any = None
+    exception: BaseException | None = None
+
+
+@dataclass
 class RetryState:
     target: Callable[..., Any] = lambda: None
     args: tuple = ()

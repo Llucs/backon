@@ -1,3 +1,14 @@
+## 3.3.0 - 2026-06-28
+
+- Optimize performance: 7.6x faster than tenacity and backoff in retry benchmarks
+- Replace expensive `traceback.format_exception_only()` with direct `str(exc)` formatting in log handlers
+- Remove double handler configuration in decorator path (was calling handlers twice)
+- Skip `time.sleep(0)` when wait time is zero
+- Inline hot functions (`_elapsed`, `_now`, `_next_wait`) in retry loops
+- Add `_retry_sync_inner`/`_retry_async_inner` fast path for pre-configured handlers
+- Add `_config_handlers` fast path to skip `hasattr` for pre-configured lists
+- Remove unused imports (`sys`, `traceback`, `_next_wait`)
+
 ## 3.2.0 - 2026-06-28
 
 - Add `|` / `&` operator overloading for `Stop` and `RetryCondition` composition

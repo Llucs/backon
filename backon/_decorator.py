@@ -21,7 +21,7 @@ from backon._conditions import (
     retry_if_result,
 )
 from backon._jitter import full_jitter
-from backon._retry import _retry_async, _retry_sync
+from backon._retry import _retry_async_inner, _retry_sync_inner
 from backon._state import RetryState
 from backon._typing import (
     P,
@@ -91,7 +91,7 @@ def on_predicate(
 
                 return cast(
                     R,
-                    await _retry_async(
+                    await _retry_async_inner(
                         wrapped,
                         wait_gen,
                         condition=condition,
@@ -121,7 +121,7 @@ def on_predicate(
 
                 return cast(
                     R,
-                    _retry_sync(
+                    _retry_sync_inner(
                         lambda: target(*args, **kwargs),
                         wait_gen,
                         condition=condition,
@@ -217,7 +217,7 @@ def on_exception(
 
                 return cast(
                     R,
-                    await _retry_async(
+                    await _retry_async_inner(
                         wrapped,
                         wait_gen,
                         condition=condition,
@@ -247,7 +247,7 @@ def on_exception(
 
                 return cast(
                     R,
-                    _retry_sync(
+                    _retry_sync_inner(
                         lambda: target(*args, **kwargs),
                         wait_gen,
                         condition=condition,

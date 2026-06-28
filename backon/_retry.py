@@ -16,7 +16,6 @@ from backon._common import (
     _log_backoff,
     _log_giveup,
     _maybe_call,
-    _next_wait,
     _now,
     _prepare_logger,
     is_enabled,
@@ -44,21 +43,19 @@ from backon._typing import (
 from backon._wait_gen import expo
 
 
-def _sync_call_handlers(hdlrs, details):
-    if not hdlrs:
-        return
-    for hdlr in hdlrs:
-        hdlr(details)
+def _call_hdlrs(hdlrs, details):
+    if hdlrs:
+        for h in hdlrs:
+            h(details)
 
 
-async def _async_call_handlers(handlers, details):
-    if not handlers:
-        return
-    for handler in handlers:
-        if inspect.iscoroutinefunction(handler):
-            await handler(details)
-        else:
-            handler(details)
+async def _call_hdlrs_async(handlers, details):
+    if handlers:
+        for handler in handlers:
+            if inspect.iscoroutinefunction(handler):
+                await handler(details)
+            else:
+                handler(details)
 
 
 def _to_seconds(value: float | int | timedelta) -> float:
@@ -128,15 +125,16 @@ def _retry_loop_sync(
     wait_gen_kwargs,
 ):
     state = RetryState(target=target)
-    state.start_time = _now()
+    start_time = _now()
+    state.start_time = start_time
     wait = _init_wait_gen(wait_gen, wait_gen_kwargs)
 
     while True:
         state.tries += 1
-        state.elapsed = _elapsed(state.start_time)
+        state.elapsed = _now() - start_time
         outcome = Attempt(tries=state.tries, elapsed=state.elapsed)
 
-        _sync_call_handlers(on_attempt, state.to_details())
+        _call_hdlrs(on_attempt, state.to_details())
 
         try:
             ret = target()
@@ -145,16 +143,23 @@ def _retry_loop_sync(
             outcome.value = None
             state.outcome = outcome
             try:
-                seconds = _next_wait(wait, None, jitter, state.elapsed, max_time)
+                value = wait.send(None)
+                if jitter is not None:
+                    seconds = jitter(value)
+                else:
+                    seconds = value
+                if max_time is not None:
+                    seconds = min(seconds, max_time - state.elapsed)
             except StopIteration:
                 break
             if stop(state):
                 break
             details = state.to_details()
             details["wait"] = seconds
-            _sync_call_handlers(before_sleep, details)
-            _sync_call_handlers(on_backoff, details)
-            sleep(seconds)
+            _call_hdlrs(before_sleep, details)
+            _call_hdlrs(on_backoff, details)
+            if seconds > 0:
+                sleep(seconds)
             continue
         except BaseException as exc:
             outcome.exception = exc
@@ -165,7 +170,7 @@ def _retry_loop_sync(
             if not condition(state):
                 details = state.to_details()
                 details["exception"] = exc
-                _sync_call_handlers(on_giveup, details)
+                _call_hdlrs(on_giveup, details)
                 if retry_error_callback is not None:
                     return retry_error_callback(details)
                 if raise_on_giveup:
@@ -175,7 +180,7 @@ def _retry_loop_sync(
             if stop(state):
                 details = state.to_details()
                 details["exception"] = exc
-                _sync_call_handlers(on_giveup, details)
+                _call_hdlrs(on_giveup, details)
                 if retry_error_callback is not None:
                     return retry_error_callback(details)
                 if raise_on_giveup:
@@ -183,11 +188,17 @@ def _retry_loop_sync(
                 return None
 
             try:
-                seconds = _next_wait(wait, exc, jitter, state.elapsed, max_time)
+                value = wait.send(exc)
+                if jitter is not None:
+                    seconds = jitter(value)
+                else:
+                    seconds = value
+                if max_time is not None:
+                    seconds = min(seconds, max_time - state.elapsed)
             except StopIteration:
                 details = state.to_details()
                 details["exception"] = exc
-                _sync_call_handlers(on_giveup, details)
+                _call_hdlrs(on_giveup, details)
                 if raise_on_giveup:
                     raise exc from None
                 return None
@@ -195,9 +206,10 @@ def _retry_loop_sync(
             details = state.to_details()
             details["wait"] = seconds
             details["exception"] = exc
-            _sync_call_handlers(before_sleep, details)
-            _sync_call_handlers(on_backoff, details)
-            sleep(seconds)
+            _call_hdlrs(before_sleep, details)
+            _call_hdlrs(on_backoff, details)
+            if seconds > 0:
+                sleep(seconds)
         else:
             outcome.value = ret
             outcome.exception = None
@@ -207,27 +219,34 @@ def _retry_loop_sync(
                 if stop(state):
                     details = state.to_details()
                     details["value"] = ret
-                    _sync_call_handlers(on_giveup, details)
+                    _call_hdlrs(on_giveup, details)
                     return ret
 
                 try:
-                    seconds = _next_wait(wait, ret, jitter, state.elapsed, max_time)
+                    value = wait.send(ret)
+                    if jitter is not None:
+                        seconds = jitter(value)
+                    else:
+                        seconds = value
+                    if max_time is not None:
+                        seconds = min(seconds, max_time - state.elapsed)
                 except StopIteration:
                     details = state.to_details()
                     details["value"] = ret
-                    _sync_call_handlers(on_giveup, details)
+                    _call_hdlrs(on_giveup, details)
                     return ret
 
                 details = state.to_details()
                 details["wait"] = seconds
                 details["value"] = ret
-                _sync_call_handlers(before_sleep, details)
-                _sync_call_handlers(on_backoff, details)
-                sleep(seconds)
+                _call_hdlrs(before_sleep, details)
+                _call_hdlrs(on_backoff, details)
+                if seconds > 0:
+                    sleep(seconds)
             else:
                 details = state.to_details()
                 details["value"] = ret
-                _sync_call_handlers(on_success, details)
+                _call_hdlrs(on_success, details)
                 return ret
 
 
@@ -249,15 +268,16 @@ async def _retry_loop_async(
     wait_gen_kwargs,
 ):
     state = RetryState(target=target)
-    state.start_time = _now()
+    start_time = _now()
+    state.start_time = start_time
     wait = _init_wait_gen(wait_gen, wait_gen_kwargs)
 
     while True:
         state.tries += 1
-        state.elapsed = _elapsed(state.start_time)
+        state.elapsed = _now() - start_time
         outcome = Attempt(tries=state.tries, elapsed=state.elapsed)
 
-        await _async_call_handlers(on_attempt, state.to_details())
+        await _call_hdlrs_async(on_attempt, state.to_details())
 
         try:
             ret = await target()
@@ -266,16 +286,23 @@ async def _retry_loop_async(
             outcome.value = None
             state.outcome = outcome
             try:
-                seconds = _next_wait(wait, None, jitter, state.elapsed, max_time)
+                value = wait.send(None)
+                if jitter is not None:
+                    seconds = jitter(value)
+                else:
+                    seconds = value
+                if max_time is not None:
+                    seconds = min(seconds, max_time - state.elapsed)
             except StopIteration:
                 break
             if stop(state):
                 break
             details = state.to_details()
             details["wait"] = seconds
-            await _async_call_handlers(before_sleep, details)
-            await _async_call_handlers(on_backoff, details)
-            await sleep(seconds)
+            await _call_hdlrs_async(before_sleep, details)
+            await _call_hdlrs_async(on_backoff, details)
+            if seconds > 0:
+                await sleep(seconds)
             continue
         except BaseException as exc:
             outcome.exception = exc
@@ -286,7 +313,7 @@ async def _retry_loop_async(
             if not condition(state):
                 details = state.to_details()
                 details["exception"] = exc
-                await _async_call_handlers(on_giveup, details)
+                await _call_hdlrs_async(on_giveup, details)
                 if retry_error_callback is not None:
                     return retry_error_callback(details)
                 if raise_on_giveup:
@@ -296,7 +323,7 @@ async def _retry_loop_async(
             if stop(state):
                 details = state.to_details()
                 details["exception"] = exc
-                await _async_call_handlers(on_giveup, details)
+                await _call_hdlrs_async(on_giveup, details)
                 if retry_error_callback is not None:
                     return retry_error_callback(details)
                 if raise_on_giveup:
@@ -304,11 +331,17 @@ async def _retry_loop_async(
                 return None
 
             try:
-                seconds = _next_wait(wait, exc, jitter, state.elapsed, max_time)
+                value = wait.send(exc)
+                if jitter is not None:
+                    seconds = jitter(value)
+                else:
+                    seconds = value
+                if max_time is not None:
+                    seconds = min(seconds, max_time - state.elapsed)
             except StopIteration:
                 details = state.to_details()
                 details["exception"] = exc
-                await _async_call_handlers(on_giveup, details)
+                await _call_hdlrs_async(on_giveup, details)
                 if raise_on_giveup:
                     raise exc from None
                 return None
@@ -316,9 +349,10 @@ async def _retry_loop_async(
             details = state.to_details()
             details["wait"] = seconds
             details["exception"] = exc
-            await _async_call_handlers(before_sleep, details)
-            await _async_call_handlers(on_backoff, details)
-            await sleep(seconds)
+            await _call_hdlrs_async(before_sleep, details)
+            await _call_hdlrs_async(on_backoff, details)
+            if seconds > 0:
+                await sleep(seconds)
         else:
             outcome.value = ret
             outcome.exception = None
@@ -328,28 +362,129 @@ async def _retry_loop_async(
                 if stop(state):
                     details = state.to_details()
                     details["value"] = ret
-                    await _async_call_handlers(on_giveup, details)
+                    await _call_hdlrs_async(on_giveup, details)
                     return ret
 
                 try:
-                    seconds = _next_wait(wait, ret, jitter, state.elapsed, max_time)
+                    value = wait.send(ret)
+                    if jitter is not None:
+                        seconds = jitter(value)
+                    else:
+                        seconds = value
+                    if max_time is not None:
+                        seconds = min(seconds, max_time - state.elapsed)
                 except StopIteration:
                     details = state.to_details()
                     details["value"] = ret
-                    await _async_call_handlers(on_giveup, details)
+                    await _call_hdlrs_async(on_giveup, details)
                     return ret
 
                 details = state.to_details()
                 details["wait"] = seconds
                 details["value"] = ret
-                await _async_call_handlers(before_sleep, details)
-                await _async_call_handlers(on_backoff, details)
-                await sleep(seconds)
+                await _call_hdlrs_async(before_sleep, details)
+                await _call_hdlrs_async(on_backoff, details)
+                if seconds > 0:
+                    await sleep(seconds)
             else:
                 details = state.to_details()
                 details["value"] = ret
-                await _async_call_handlers(on_success, details)
+                await _call_hdlrs_async(on_success, details)
                 return ret
+
+
+def _retry_sync_inner(
+    target,
+    wait_gen,
+    *,
+    condition=None,
+    stop=None,
+    jitter=None,
+    on_success=None,
+    on_backoff=None,
+    on_giveup=None,
+    on_attempt=None,
+    before_sleep=None,
+    sleep=None,
+    retry_error_callback=None,
+    raise_on_giveup=True,
+    max_time=None,
+    wait_gen_kwargs=None,
+    max_tries=None,
+):
+    if not is_enabled():
+        return target()
+    if wait_gen_kwargs is None:
+        wait_gen_kwargs = {}
+    if stop is None:
+        stop = _make_default_stop(max_tries, max_time)
+
+    _sleep = sleep or time_module.sleep
+
+    return _retry_loop_sync(
+        target,
+        wait_gen,
+        condition,
+        stop,
+        jitter,
+        on_success,
+        on_backoff,
+        on_giveup,
+        on_attempt,
+        before_sleep,
+        _sleep,
+        retry_error_callback,
+        raise_on_giveup,
+        max_time,
+        wait_gen_kwargs,
+    )
+
+
+async def _retry_async_inner(
+    target,
+    wait_gen,
+    *,
+    condition=None,
+    stop=None,
+    jitter=None,
+    on_success=None,
+    on_backoff=None,
+    on_giveup=None,
+    on_attempt=None,
+    before_sleep=None,
+    sleep=None,
+    retry_error_callback=None,
+    raise_on_giveup=True,
+    max_time=None,
+    wait_gen_kwargs=None,
+    max_tries=None,
+):
+    if not is_enabled():
+        return await target()
+    if wait_gen_kwargs is None:
+        wait_gen_kwargs = {}
+    if stop is None:
+        stop = _make_default_stop(max_tries, max_time)
+
+    _sleep = sleep or asyncio.sleep
+
+    return await _retry_loop_async(
+        target,
+        wait_gen,
+        condition,
+        stop,
+        jitter,
+        on_success,
+        on_backoff,
+        on_giveup,
+        on_attempt,
+        before_sleep,
+        _sleep,
+        retry_error_callback,
+        raise_on_giveup,
+        max_time,
+        wait_gen_kwargs,
+    )
 
 
 def _retry_sync(
@@ -721,20 +856,21 @@ class Retrying:
 
             max_time = _maybe_call(self._max_time)
             try:
-                seconds = _next_wait(
-                    self._iter_wait,
-                    exc,
-                    self._jitter,
-                    self._iter_state.elapsed,
-                    max_time,
-                )
+                value = self._iter_wait.send(exc)
+                if self._jitter is not None:
+                    seconds = self._jitter(value)
+                else:
+                    seconds = value
+                if max_time is not None:
+                    seconds = min(seconds, max_time - self._iter_state.elapsed)
             except StopIteration:
                 if self._raise_on_giveup:
                     raise exc from None
                 raise StopIteration from None
 
             sleep_fn = self._sleep or time_module.sleep
-            sleep_fn(seconds)
+            if seconds > 0:
+                sleep_fn(seconds)
 
         self._iter_state.tries += 1
         self._iter_state.elapsed = _elapsed(self._iter_state.start_time)

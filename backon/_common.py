@@ -1,8 +1,6 @@
 import functools
 import logging
-import sys
 import time as time_module
-import traceback
 
 _logger = logging.getLogger("backon")
 _logger.addHandler(logging.NullHandler())
@@ -63,6 +61,8 @@ def _prepare_logger(logger):
 def _config_handlers(
     user_handlers, *, default_handler=None, logger=None, log_level=None
 ):
+    if isinstance(user_handlers, list) and logger is None:
+        return user_handlers
     handlers = []
     if logger is not None:
         assert log_level is not None
@@ -84,28 +84,23 @@ def _config_handlers(
 
 def _log_backoff(details, logger, log_level):
     msg = "Backing off %s(...) for %.1fs (%s)"
-    log_args = [details["target"].__name__, details["wait"]]
-
-    exc_typ, exc, _ = sys.exc_info()
+    exc = details.get("exception")
     if exc is not None:
-        exc_fmt = traceback.format_exception_only(exc_typ, exc)[-1]
-        log_args.append(exc_fmt.rstrip("\n"))
+        exc_fmt = f"{type(exc).__name__}: {exc}"
     else:
-        log_args.append(details["value"])
+        exc_fmt = details.get("value", "unknown")
+    log_args = [details["target"].__name__, details["wait"], exc_fmt]
     logger.log(log_level, msg, *log_args)
 
 
 def _log_giveup(details, logger, log_level):
     msg = "Giving up %s(...) after %d tries (%s)"
-    log_args = [details["target"].__name__, details["tries"]]
-
-    exc_typ, exc, _ = sys.exc_info()
+    exc = details.get("exception")
     if exc is not None:
-        exc_fmt = traceback.format_exception_only(exc_typ, exc)[-1]
-        log_args.append(exc_fmt.rstrip("\n"))
+        exc_fmt = f"{type(exc).__name__}: {exc}"
     else:
-        log_args.append(details["value"])
-
+        exc_fmt = details.get("value", "unknown")
+    log_args = [details["target"].__name__, details["tries"], exc_fmt]
     logger.log(log_level, msg, *log_args)
 
 

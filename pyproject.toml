@@ -41,6 +41,10 @@ Issues = "https://github.com/Llucs/backon/issues"
 [tool.pdm]
 distribution = true
 
+[tool.pdm.overrides]
+author = "Llucs"
+author_email = "c307lucas@gmail.com"
+
 [tool.pdm.dev-dependencies]
 lint = [
     "ruff>=0.6",

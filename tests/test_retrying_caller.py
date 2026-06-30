@@ -16,7 +16,10 @@ class TestRetryingCaller:
             return "ok"
 
         caller = backon.RetryingCaller(
-            backon.constant, exception=ValueError, max_tries=5, **_KW,
+            backon.constant,
+            exception=ValueError,
+            max_tries=5,
+            **_KW,
         )
         result = caller(flaky)
         assert result == "ok"
@@ -39,7 +42,10 @@ class TestRetryingCaller:
 
     def test_retrying_caller_copy(self):
         caller = backon.RetryingCaller(
-            backon.expo, exception=ValueError, max_tries=5, jitter=None,
+            backon.expo,
+            exception=ValueError,
+            max_tries=5,
+            jitter=None,
         )
         copied = caller.copy()
         assert copied._exception == caller._exception
@@ -56,7 +62,10 @@ class TestRetryingCaller:
             raise ValueError("always fail")
 
         caller = backon.RetryingCaller(
-            backon.constant, exception=ValueError, max_tries=2, **_KW,
+            backon.constant,
+            exception=ValueError,
+            max_tries=2,
+            **_KW,
         )
         with pytest.raises(ValueError):
             caller(flaky)
@@ -67,8 +76,12 @@ class TestRetryingCaller:
 
         with pytest.raises(ValueError):
             backon.retry(
-                flaky, backon.constant, exception=ValueError,
-                max_tries=3, jitter=None, interval=10,
+                flaky,
+                backon.constant,
+                exception=ValueError,
+                max_tries=3,
+                jitter=None,
+                interval=10,
                 giveup=lambda e: 0.05,
             )
 
@@ -83,7 +96,10 @@ class TestRetryingCaller:
             return "ok"
 
         caller = backon.AsyncRetryingCaller(
-            backon.constant, exception=ValueError, max_tries=5, **_KW,
+            backon.constant,
+            exception=ValueError,
+            max_tries=5,
+            **_KW,
         )
         result = await caller(flaky)
         assert result == "ok"
@@ -108,7 +124,10 @@ class TestRetryingCaller:
     @pytest.mark.asyncio
     async def test_async_retrying_caller_copy(self):
         caller = backon.AsyncRetryingCaller(
-            backon.expo, exception=ValueError, max_tries=5, jitter=None,
+            backon.expo,
+            exception=ValueError,
+            max_tries=5,
+            jitter=None,
         )
         copied = caller.copy()
         assert copied._exception == caller._exception

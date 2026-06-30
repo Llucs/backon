@@ -5,8 +5,8 @@ import contextvars
 from collections.abc import Generator
 from typing import Any, cast
 
-_retry_context: contextvars.ContextVar[dict[str, Any] | None] = (
-    contextvars.ContextVar("_retry_context", default=None)
+_retry_context: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
+    "_retry_context", default=None
 )
 
 

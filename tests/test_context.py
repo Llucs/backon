@@ -67,8 +67,11 @@ class TestIsRetrying:
 
         with pytest.raises(ValueError):
             backon.retry(
-                flaky, backon.constant, exception=ValueError,
-                max_tries=2, **_KW,
+                flaky,
+                backon.constant,
+                exception=ValueError,
+                max_tries=2,
+                **_KW,
             )
         assert any(retrying for retrying, _ in attempts)
 
@@ -82,8 +85,11 @@ class TestIsRetrying:
 
         with pytest.raises(ValueError):
             await backon.retry(
-                flaky, backon.constant, exception=ValueError,
-                max_tries=2, **_KW,
+                flaky,
+                backon.constant,
+                exception=ValueError,
+                max_tries=2,
+                **_KW,
             )
         assert any(retrying for retrying, _ in attempts)
 

@@ -18,6 +18,7 @@ from backon._common import (
     _log_backoff,
     _log_giveup,
     _maybe_call,
+    _next_wait,
     _now,
     _prepare_logger,
     is_enabled,
@@ -164,13 +165,7 @@ def _retry_loop_sync(
                 call_state.outcome = outcome
                 call_state.outcome_timestamp = _now()
                 try:
-                    value = wait.send(None)
-                    if jitter is not None:
-                        seconds = jitter(value)
-                    else:
-                        seconds = value
-                    if max_time is not None:
-                        seconds = min(seconds, max_time - state.elapsed)
+                    seconds = _next_wait(wait, None, jitter, state.elapsed, max_time)
                 except StopIteration:
                     break
                 if stop(state):
@@ -217,13 +212,7 @@ def _retry_loop_sync(
                         return None
 
                     try:
-                        value = wait.send(exc)
-                        if jitter is not None:
-                            seconds = jitter(value)
-                        else:
-                            seconds = value
-                        if max_time is not None:
-                            seconds = min(seconds, max_time - state.elapsed)
+                        seconds = _next_wait(wait, exc, jitter, state.elapsed, max_time)
                     except StopIteration:
                         details = state.to_details()
                         details["exception"] = exc
@@ -285,13 +274,7 @@ def _retry_loop_sync(
                         return ret
 
                     try:
-                        value = wait.send(ret)
-                        if jitter is not None:
-                            seconds = jitter(value)
-                        else:
-                            seconds = value
-                        if max_time is not None:
-                            seconds = min(seconds, max_time - state.elapsed)
+                        seconds = _next_wait(wait, ret, jitter, state.elapsed, max_time)
                     except StopIteration:
                         details = state.to_details()
                         details["value"] = ret
@@ -364,13 +347,7 @@ async def _retry_loop_async(
                 call_state.outcome = outcome
                 call_state.outcome_timestamp = _now()
                 try:
-                    value = wait.send(None)
-                    if jitter is not None:
-                        seconds = jitter(value)
-                    else:
-                        seconds = value
-                    if max_time is not None:
-                        seconds = min(seconds, max_time - state.elapsed)
+                    seconds = _next_wait(wait, None, jitter, state.elapsed, max_time)
                 except StopIteration:
                     break
                 if stop(state):
@@ -417,13 +394,7 @@ async def _retry_loop_async(
                         return None
 
                     try:
-                        value = wait.send(exc)
-                        if jitter is not None:
-                            seconds = jitter(value)
-                        else:
-                            seconds = value
-                        if max_time is not None:
-                            seconds = min(seconds, max_time - state.elapsed)
+                        seconds = _next_wait(wait, exc, jitter, state.elapsed, max_time)
                     except StopIteration:
                         details = state.to_details()
                         details["exception"] = exc
@@ -485,13 +456,7 @@ async def _retry_loop_async(
                         return ret
 
                     try:
-                        value = wait.send(ret)
-                        if jitter is not None:
-                            seconds = jitter(value)
-                        else:
-                            seconds = value
-                        if max_time is not None:
-                            seconds = min(seconds, max_time - state.elapsed)
+                        seconds = _next_wait(wait, ret, jitter, state.elapsed, max_time)
                     except StopIteration:
                         details = state.to_details()
                         details["value"] = ret

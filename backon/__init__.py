@@ -47,7 +47,7 @@ from backon._wait_gen import (
 
 try:
     __version__ = _version("backon")
-except _PackageNotFoundError:
+except _PackageNotFoundError:  # pragma: no cover
     __version__ = "0.0.0"
 
 

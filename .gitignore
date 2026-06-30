@@ -3,6 +3,12 @@ __pycache__/
 *.pyo
 .venv/
 .pdm-python
+.pdm-build/
 dist/
 *.egg-info/
 .DS_Store
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.whl
+*.tar.gz

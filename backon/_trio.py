@@ -4,6 +4,7 @@ import inspect
 from backon._common import (
     _elapsed,
     _init_wait_gen,
+    _is_custom_wait,
     _maybe_call,
     _next_wait,
     _now,
@@ -199,17 +200,19 @@ def retry_exception(
                     max_time_value is not None and elapsed >= max_time_value
                 )
 
-                if giveup_result or max_tries_exceeded or max_time_exceeded:
+                if _is_custom_wait(giveup_result):
+                    seconds = float(giveup_result)
+                elif giveup_result or max_tries_exceeded or max_time_exceeded:
                     await _call_handlers(on_giveup, **details, exception=e)
                     if raise_on_giveup:
                         raise
                     return None
-
-                try:
-                    seconds = _next_wait(wait, e, jitter, elapsed, max_time_value)
-                except StopIteration:
-                    await _call_handlers(on_giveup, **details, exception=e)
-                    raise e from None
+                else:
+                    try:
+                        seconds = _next_wait(wait, e, jitter, elapsed, max_time_value)
+                    except StopIteration:
+                        await _call_handlers(on_giveup, **details, exception=e)
+                        raise e from None
 
                 await _call_handlers(on_backoff, **details, wait=seconds, exception=e)
 

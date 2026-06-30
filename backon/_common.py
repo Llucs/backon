@@ -110,3 +110,26 @@ def _now():
 
 def _elapsed(start):
     return _now() - start
+
+
+def _is_custom_wait(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+_hot_loop_data: dict[str, float | int] = {"last_retry": 0.0, "count": 0}
+
+
+def _check_hot_loop() -> None:
+    now = time_module.monotonic()
+    if _hot_loop_data["last_retry"] > 0 and now - _hot_loop_data["last_retry"] < 0.1:
+        _hot_loop_data["count"] += 1
+    else:
+        _hot_loop_data["count"] = 0
+    _hot_loop_data["last_retry"] = now
+    if _hot_loop_data["count"] >= 5:
+        logging.getLogger("backon").warning(
+            "Hot loop detected: %d retries in quick succession. "
+            "Add jitter or increase backoff.",
+            _hot_loop_data["count"],
+        )
+        _hot_loop_data["count"] = 0

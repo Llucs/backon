@@ -22,9 +22,16 @@ from backon._conditions import (
     stop_never,
     stop_when_event_set,
 )
+from backon._context import get_attempt_number, is_retrying
 from backon._decorator import on_exception, on_predicate
 from backon._jitter import full_jitter, random_jitter
-from backon._retry import Retrying, retry, sleep_using_event
+from backon._retry import (
+    AsyncRetryingCaller,
+    Retrying,
+    RetryingCaller,
+    retry,
+    sleep_using_event,
+)
 from backon._state import RetryCallState, RetryError, RetryState, TryAgain
 from backon._wait_gen import (
     constant,
@@ -62,7 +69,11 @@ __all__ = [
     "random_jitter",
     "disable",
     "enable",
+    "is_retrying",
+    "get_attempt_number",
     "sleep_using_event",
+    "RetryingCaller",
+    "AsyncRetryingCaller",
     "TryAgain",
     "RetryError",
     "RetryState",

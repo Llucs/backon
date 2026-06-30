@@ -75,7 +75,7 @@ class stop_when_event_set(Stop):
 
 
 class RetryCondition:
-    def __call__(self, state: RetryState) -> bool:
+    def __call__(self, state: RetryState) -> bool | float:
         raise NotImplementedError
 
     def __or__(self, other: RetryCondition) -> RetryCondition:
@@ -99,14 +99,19 @@ class retry_if_exception_type(RetryCondition):
 
 
 class retry_if_exception(RetryCondition):
-    def __init__(self, predicate: Callable[[BaseException], bool]) -> None:
+    def __init__(self, predicate: Callable[[BaseException], bool | float]) -> None:
         self.predicate = predicate
 
-    def __call__(self, state: RetryState) -> bool:
+    def __call__(self, state: RetryState) -> bool | float:
         if state.outcome is None:
             return False
         exc = state.outcome.exception
-        return exc is not None and self.predicate(exc)
+        if exc is None:
+            return False
+        result = self.predicate(exc)
+        if isinstance(result, (int, float)) and not isinstance(result, bool):
+            return float(result)
+        return bool(result)
 
 
 class retry_if_exception_message(RetryCondition):
@@ -154,16 +159,26 @@ class retry_all(RetryCondition):
     def __init__(self, *conditions: RetryCondition) -> None:
         self.conditions = conditions
 
-    def __call__(self, state: RetryState) -> bool:
-        return all(c(state) for c in self.conditions)
+    def __call__(self, state: RetryState) -> bool | float:
+        for c in self.conditions:
+            result = c(state)
+            if isinstance(result, bool) and not result:
+                return False
+        return True
 
 
 class retry_any(RetryCondition):
     def __init__(self, *conditions: RetryCondition) -> None:
         self.conditions = conditions
 
-    def __call__(self, state: RetryState) -> bool:
-        return any(c(state) for c in self.conditions)
+    def __call__(self, state: RetryState) -> bool | float:
+        for c in self.conditions:
+            result = c(state)
+            if isinstance(result, bool) and result:
+                return True
+            if isinstance(result, (int, float)) and not isinstance(result, bool):
+                return float(result)
+        return False
 
 
 class retry_always(RetryCondition):

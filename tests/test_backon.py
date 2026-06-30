@@ -69,5 +69,9 @@ class TestImports:
             "retry_any",
             "retry_always",
             "retry_never",
+            "is_retrying",
+            "get_attempt_number",
+            "RetryingCaller",
+            "AsyncRetryingCaller",
         }
         assert set(backon.__all__) == expected

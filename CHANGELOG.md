@@ -1,3 +1,11 @@
+## 3.6.0 - 2026-06-30
+
+- Add `is_retrying()` / `get_attempt_number()` — `contextvars`-based retry context inspection
+- Add dynamic backoff via `giveup` return value — return `float` to override wait per attempt (respect Retry-After headers)
+- Add hot loop detection — warns when 5+ retries occur with < 100ms between them
+- Add `RetryingCaller` / `AsyncRetryingCaller` — callable objects with pre-bound exception type via `.on()`
+- Export new public API: `is_retrying`, `get_attempt_number`, `RetryingCaller`, `AsyncRetryingCaller`
+
 ## 3.5.0 - 2026-06-30
 
 - Add `CircuitBreaker` + `BreakerRetrying` — circuit breaker pattern with CLOSED/OPEN/HALF_OPEN states

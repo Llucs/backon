@@ -5,7 +5,7 @@ on:
     types: [published]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -15,6 +15,25 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
+      - run: pip install pdm
+      - run: pdm install -G lint -G test
+      - run: pdm run pytest tests/ -q
+      - run: pdm run ruff check backon/
+      - run: pdm run mypy backon/
+
+  build:
+    needs: [test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
       - run: pip install pdm
       - run: pdm build
       - uses: actions/upload-artifact@v4

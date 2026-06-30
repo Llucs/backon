@@ -45,18 +45,21 @@ def hedge(
     **wait_gen_kwargs: Any,
 ) -> R:
     if inspect.iscoroutinefunction(target):
-        return _hedge_async(
-            target,
-            wait_gen,
-            max_hedge=max_hedge,
-            exception=exception,
-            max_tries=max_tries,
-            max_time=max_time,
-            jitter=jitter,
-            on_hedge=on_hedge,
-            timeout=timeout,
-            predicate=predicate,
-            **wait_gen_kwargs,
+        return cast(
+            R,
+            _hedge_async(
+                target,
+                wait_gen,
+                max_hedge=max_hedge,
+                exception=exception,
+                max_tries=max_tries,
+                max_time=max_time,
+                jitter=jitter,
+                on_hedge=on_hedge,
+                timeout=timeout,
+                predicate=predicate,
+                **wait_gen_kwargs,
+            ),
         )
     return _hedge_sync(
         target,
@@ -78,19 +81,19 @@ def _make_hedge_target(target, args, kwargs):
 
 
 def _hedge_sync(
-    target,
-    wait_gen,
+    target: Callable[..., T],
+    wait_gen: _WaitGenerator = expo,
     *,
-    max_hedge,
-    exception,
-    max_tries,
-    max_time,
-    jitter,
-    on_hedge,
-    timeout,
-    predicate,
-    **wait_gen_kwargs,
-):
+    max_hedge: int = 3,
+    exception: _MaybeSequence[type[Exception]] | None = None,
+    max_tries: _MaybeCallable[int] | None = None,
+    max_time: _MaybeCallable[float] | None = None,
+    jitter: _Jitterer | None = full_jitter,
+    on_hedge: _Handler | Iterable[_Handler] | None = None,
+    timeout: float | None = None,
+    predicate: _Predicate[Any] = operator.not_,
+    **wait_gen_kwargs: Any,
+) -> T:
     on_hedge_list = []
     if on_hedge is not None:
         if hasattr(on_hedge, "__iter__"):
@@ -137,7 +140,7 @@ def _hedge_sync(
         for fut in done:
             exc = fut.exception()
             if exc is None:
-                return fut.result()
+                return cast(T, fut.result())
             if first_exc is None:
                 first_exc = exc
 
@@ -147,19 +150,19 @@ def _hedge_sync(
 
 
 async def _hedge_async(
-    target,
-    wait_gen,
+    target: Callable[..., T],
+    wait_gen: _WaitGenerator = expo,
     *,
-    max_hedge,
-    exception,
-    max_tries,
-    max_time,
-    jitter,
-    on_hedge,
-    timeout,
-    predicate,
-    **wait_gen_kwargs,
-):
+    max_hedge: int = 3,
+    exception: _MaybeSequence[type[Exception]] | None = None,
+    max_tries: _MaybeCallable[int] | None = None,
+    max_time: _MaybeCallable[float] | None = None,
+    jitter: _Jitterer | None = full_jitter,
+    on_hedge: _Handler | Iterable[_Handler] | None = None,
+    timeout: float | None = None,
+    predicate: _Predicate[Any] = operator.not_,
+    **wait_gen_kwargs: Any,
+) -> T:
     on_hedge_list = []
     if on_hedge is not None:
         if hasattr(on_hedge, "__iter__"):
@@ -204,7 +207,7 @@ async def _hedge_async(
     for task in done:
         exc = task.exception()
         if exc is None:
-            return task.result()
+            return cast(T, task.result())
         if first_exc is None:
             first_exc = exc
 
@@ -314,7 +317,7 @@ class HedgingRetrying:
         if inspect.iscoroutinefunction(target):
             raise TypeError("Use async_call for async functions")
 
-        def wrapped():
+        def wrapped() -> T:
             return target(*args, **kwargs)
 
         return _hedge_sync(

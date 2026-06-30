@@ -48,7 +48,7 @@
 - Add `backon.disable()` / `backon.enable()` global toggles
 - Version now read dynamically from `importlib.metadata` (single source: `pyproject.toml`)
 
-## 3.0.0 - 2026-06-27
+## 3.0.0 - 2026-06-28
 
 - Fork backoff → backon
 - Drop Python 3.7, 3.8, 3.9 (minimum 3.10)

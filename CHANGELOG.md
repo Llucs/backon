@@ -1,3 +1,9 @@
+## 3.6.1 - 2026-06-30
+
+- Fix CI: coverage 88% → 91%, ruff formatting
+- Refactor `_retry_loop_sync`/`_async` to use `_next_wait` (reduce duplication)
+- Add tests for edge cases (default jitter, custom condition float, sequence exceptions, Retrying iterator)
+
 ## 3.6.0 - 2026-06-30
 
 - Add `is_retrying()` / `get_attempt_number()` — `contextvars`-based retry context inspection

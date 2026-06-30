@@ -1,3 +1,14 @@
+## 3.5.0 - 2026-06-30
+
+- Add `CircuitBreaker` + `BreakerRetrying` — circuit breaker pattern with CLOSED/OPEN/HALF_OPEN states
+- Add `hedge()` / `on_hedge()` / `HedgingRetrying` — concurrent hedging requests (first-success-wins)
+- Add `MetricsCollector`, `PrometheusMetrics`, `OTelMetrics` — optional Prometheus/OpenTelemetry instrumentation
+- Add `testing` module — `disable_retries()`, `limit_retries()`, `remove_backoff()`, assertion helpers
+- Add `_trio` module — retry support for trio async framework
+- Modernize packaging: PEP 639 SPDX license, `license-files`
+- CI: add concurrency cancel-in-progress, pip cache
+- Release: separate build/publish jobs with PEP 740 attestations
+
 ## 3.4.0 - 2026-06-28
 
 - Add `RetryCallState` dataclass with `elapsed`, `statistics`, `seconds_since_start`, `to_details()` for per-call introspection

@@ -503,7 +503,11 @@ class TestBreakerRetrying:
     def test_breaker_property(self):
         cb = CircuitBreaker()
         br = BreakerRetrying(
-            constant, breaker=cb, max_tries=1, jitter=None, interval=0.01,
+            constant,
+            breaker=cb,
+            max_tries=1,
+            jitter=None,
+            interval=0.01,
         )
         assert br.breaker is cb
 

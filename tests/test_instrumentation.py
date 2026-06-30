@@ -48,9 +48,7 @@ class TestPrometheusMetrics:
     def test_noop_when_not_installed(self) -> None:
         with patch.dict("sys.modules", {"prometheus_client": None}):
             with patch("backon._instrumentation.prometheus_client", None):
-                with patch(
-                    "backon._instrumentation._logger.warning"
-                ) as mock_warn:
+                with patch("backon._instrumentation._logger.warning") as mock_warn:
                     from backon._instrumentation import PrometheusMetrics
 
                     pm = PrometheusMetrics()
@@ -70,12 +68,8 @@ class TestPrometheusMetrics:
         mock_prom = MagicMock()
         mock_prom.Counter = mock_counter_class
 
-        with patch.dict(
-            "sys.modules", {"prometheus_client": mock_prom}
-        ):
-            with patch(
-                "backon._instrumentation.prometheus_client", mock_prom
-            ):
+        with patch.dict("sys.modules", {"prometheus_client": mock_prom}):
+            with patch("backon._instrumentation.prometheus_client", mock_prom):
                 from backon._instrumentation import PrometheusMetrics
 
                 pm = PrometheusMetrics()
@@ -95,12 +89,8 @@ class TestPrometheusMetrics:
         mock_prom = MagicMock()
         mock_prom.Counter = mock_counter_class
 
-        with patch.dict(
-            "sys.modules", {"prometheus_client": mock_prom}
-        ):
-            with patch(
-                "backon._instrumentation.prometheus_client", mock_prom
-            ):
+        with patch.dict("sys.modules", {"prometheus_client": mock_prom}):
+            with patch("backon._instrumentation.prometheus_client", mock_prom):
                 from backon._instrumentation import PrometheusMetrics
 
                 pm = PrometheusMetrics()
@@ -115,29 +105,21 @@ class TestPrometheusMetrics:
         mock_prom = MagicMock()
         mock_prom.Counter = mock_counter_class
 
-        with patch.dict(
-            "sys.modules", {"prometheus_client": mock_prom}
-        ):
-            with patch(
-                "backon._instrumentation.prometheus_client", mock_prom
-            ):
+        with patch.dict("sys.modules", {"prometheus_client": mock_prom}):
+            with patch("backon._instrumentation.prometheus_client", mock_prom):
                 from backon._instrumentation import PrometheusMetrics
 
                 pm = PrometheusMetrics()
                 pm.emit_hedge_request("func", 3)
                 mock_counter.labels.assert_called_with(target="func")
-                mock_counter.labels.return_value.inc.assert_called_with(
-                    3
-                )
+                mock_counter.labels.return_value.inc.assert_called_with(3)
 
 
 class TestOTelMetrics:
     def test_noop_when_not_installed(self) -> None:
         with patch.dict("sys.modules", {"opentelemetry": None}):
             with patch("backon._instrumentation.otel_metrics", None):
-                with patch(
-                    "backon._instrumentation._logger.warning"
-                ) as mock_warn:
+                with patch("backon._instrumentation._logger.warning") as mock_warn:
                     from backon._instrumentation import OTelMetrics
 
                     ot = OTelMetrics()
@@ -155,9 +137,7 @@ class TestOTelMetrics:
         mock_histogram = MagicMock()
         mock_meter = MagicMock()
         mock_meter.create_counter = MagicMock(return_value=mock_counter)
-        mock_meter.create_histogram = MagicMock(
-            return_value=mock_histogram
-        )
+        mock_meter.create_histogram = MagicMock(return_value=mock_histogram)
 
         mock_metrics = MagicMock()
         mock_metrics.get_meter = MagicMock(return_value=mock_meter)
@@ -166,40 +146,28 @@ class TestOTelMetrics:
             "sys.modules",
             {"opentelemetry": MagicMock(), "opentelemetry.metrics": mock_metrics},
         ):
-            with patch(
-                "backon._instrumentation.otel_metrics", mock_metrics
-            ):
+            with patch("backon._instrumentation.otel_metrics", mock_metrics):
                 from backon._instrumentation import OTelMetrics
 
                 ot = OTelMetrics()
                 assert ot._enabled is True
-                mock_metrics.get_meter.assert_called_once_with(
-                    "backon"
-                )
+                mock_metrics.get_meter.assert_called_once_with("backon")
                 assert mock_meter.create_counter.call_count == 6
-                assert (
-                    mock_meter.create_histogram.call_count == 1
-                )
+                assert mock_meter.create_histogram.call_count == 1
 
                 ot.emit_attempt(1, 0.5, "func")
-                mock_counter.add.assert_called_with(
-                    1, attributes={"target": "func"}
-                )
+                mock_counter.add.assert_called_with(1, attributes={"target": "func"})
                 mock_histogram.record.assert_called_with(
                     0.5, attributes={"target": "func"}
                 )
 
                 ot.emit_success(2, 1.0, "func")
-                mock_counter.add.assert_called_with(
-                    1, attributes={"target": "func"}
-                )
+                mock_counter.add.assert_called_with(1, attributes={"target": "func"})
 
     def test_custom_meter_name(self) -> None:
         mock_meter = MagicMock()
         mock_meter.create_counter = MagicMock(return_value=MagicMock())
-        mock_meter.create_histogram = MagicMock(
-            return_value=MagicMock()
-        )
+        mock_meter.create_histogram = MagicMock(return_value=MagicMock())
         mock_metrics = MagicMock()
         mock_metrics.get_meter = MagicMock(return_value=mock_meter)
 
@@ -207,25 +175,17 @@ class TestOTelMetrics:
             "sys.modules",
             {"opentelemetry": MagicMock(), "opentelemetry.metrics": mock_metrics},
         ):
-            with patch(
-                "backon._instrumentation.otel_metrics", mock_metrics
-            ):
+            with patch("backon._instrumentation.otel_metrics", mock_metrics):
                 from backon._instrumentation import OTelMetrics
 
                 OTelMetrics("custom_meter")
-                mock_metrics.get_meter.assert_called_with(
-                    "custom_meter"
-                )
+                mock_metrics.get_meter.assert_called_with("custom_meter")
 
 
 class TestGlobalCollector:
     def test_default_is_metrics_collector(self) -> None:
-        assert isinstance(
-            _metrics_collector, MetricsCollector
-        )
-        assert isinstance(
-            get_metrics_collector(), MetricsCollector
-        )
+        assert isinstance(_metrics_collector, MetricsCollector)
+        assert isinstance(get_metrics_collector(), MetricsCollector)
 
     def test_set_and_get(self) -> None:
         original = get_metrics_collector()
@@ -263,16 +223,12 @@ class TestParameterTypes:
                 target_name: str,
                 exception_type: str | None = None,
             ) -> None:
-                calls.append(
-                    ("emit_attempt", (tries, elapsed, target_name), {})
-                )
+                calls.append(("emit_attempt", (tries, elapsed, target_name), {}))
 
             def emit_success(
                 self, tries: int, elapsed: float, target_name: str
             ) -> None:
-                calls.append(
-                    ("emit_success", (tries, elapsed, target_name), {})
-                )
+                calls.append(("emit_success", (tries, elapsed, target_name), {}))
 
             def emit_failure(
                 self,
@@ -289,9 +245,7 @@ class TestParameterTypes:
                     )
                 )
 
-            def emit_circuit_breaker_open(
-                self, breaker_name: str
-            ) -> None:
+            def emit_circuit_breaker_open(self, breaker_name: str) -> None:
                 calls.append(
                     (
                         "emit_circuit_breaker_open",
@@ -300,9 +254,7 @@ class TestParameterTypes:
                     )
                 )
 
-            def emit_circuit_breaker_close(
-                self, breaker_name: str
-            ) -> None:
+            def emit_circuit_breaker_close(self, breaker_name: str) -> None:
                 calls.append(
                     (
                         "emit_circuit_breaker_close",
@@ -311,9 +263,7 @@ class TestParameterTypes:
                     )
                 )
 
-            def emit_hedge_request(
-                self, target_name: str, hedge_count: int
-            ) -> None:
+            def emit_hedge_request(self, target_name: str, hedge_count: int) -> None:
                 calls.append(
                     (
                         "emit_hedge_request",

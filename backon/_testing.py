@@ -104,9 +104,7 @@ def assert_retried(fn: Callable[[], Any], expected_tries: int) -> None:
         pass
 
     if call_count != expected_tries:
-        raise RetryAssertionError(
-            f"Expected {expected_tries} tries, got {call_count}"
-        )
+        raise RetryAssertionError(f"Expected {expected_tries} tries, got {call_count}")
 
 
 def assert_not_retried(fn: Callable[[], Any]) -> None:

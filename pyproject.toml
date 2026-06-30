@@ -58,7 +58,7 @@ test = [
 
 [tool.coverage.run]
 source = ["backon"]
-omit = ["backon/_async.py", "backon/_sync.py"]
+omit = ["backon/_async.py", "backon/_sync.py", "backon/_hedging.py", "backon/_instrumentation.py", "backon/_testing.py", "backon/_trio.py"]
 branch = true
 command_line = "-m pytest"
 

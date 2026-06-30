@@ -31,9 +31,7 @@ class MetricsCollector:
     def emit_circuit_breaker_close(self, breaker_name: str) -> None:
         pass
 
-    def emit_hedge_request(
-        self, target_name: str, hedge_count: int
-    ) -> None:
+    def emit_hedge_request(self, target_name: str, hedge_count: int) -> None:
         pass
 
 
@@ -47,8 +45,7 @@ class PrometheusMetrics(MetricsCollector):
     def __init__(self) -> None:
         if prometheus_client is None:
             _logger.warning(
-                "prometheus_client not installed; PrometheusMetrics "
-                "will be a no-op"
+                "prometheus_client not installed; PrometheusMetrics will be a no-op"
             )
             self._enabled = False
             return
@@ -120,9 +117,7 @@ class PrometheusMetrics(MetricsCollector):
             return
         self._breaker_close.labels(breaker=breaker_name).inc()
 
-    def emit_hedge_request(
-        self, target_name: str, hedge_count: int
-    ) -> None:
+    def emit_hedge_request(self, target_name: str, hedge_count: int) -> None:
         if not self._enabled:
             return
         self._hedge_requests.labels(target=target_name).inc(hedge_count)
@@ -138,8 +133,7 @@ class OTelMetrics(MetricsCollector):
     def __init__(self, meter_name: str = "backon") -> None:
         if otel_metrics is None:
             _logger.warning(
-                "opentelemetry-api not installed; OTelMetrics will "
-                "be a no-op"
+                "opentelemetry-api not installed; OTelMetrics will be a no-op"
             )
             self._enabled = False
             return
@@ -222,9 +216,7 @@ class OTelMetrics(MetricsCollector):
         attrs = {"breaker": breaker_name}
         self._breaker_close.add(1, attributes=attrs)
 
-    def emit_hedge_request(
-        self, target_name: str, hedge_count: int
-    ) -> None:
+    def emit_hedge_request(self, target_name: str, hedge_count: int) -> None:
         if not self._enabled:
             return
         attrs = {"target": target_name}

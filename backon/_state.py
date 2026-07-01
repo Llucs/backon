@@ -11,6 +11,10 @@ class TryAgain(Exception):
     """Raise inside a retried function to force an immediate retry."""
 
 
+class AttemptTimeoutError(Exception):
+    """Raised when a single attempt exceeds the configured timeout."""
+
+
 class RetryError(Exception):
     """Raised when retry gives up. Wraps the last attempt's exception."""
 

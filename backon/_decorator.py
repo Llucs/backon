@@ -21,6 +21,7 @@ from backon._conditions import (
     retry_if_result,
 )
 from backon._jitter import full_jitter
+from backon._rate_limiter import RateLimiter
 from backon._retry import _retry_async_inner, _retry_sync_inner
 from backon._state import RetryState
 from backon._typing import (
@@ -56,6 +57,8 @@ def on_predicate(
     sleep: Callable[[float], Any] | None = None,
     before: _Handler | Iterable[_Handler] | None = None,
     after: _Handler | Iterable[_Handler] | None = None,
+    rate_limit: RateLimiter | None = None,
+    attempt_timeout: float | None = None,
     **wait_gen_kwargs: Any,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorate(target: Callable[P, R]) -> Callable[P, R]:
@@ -114,6 +117,8 @@ def on_predicate(
                         wait_gen_kwargs=wait_gen_kwargs,
                         before=before,
                         after=after,
+                        rate_limit=rate_limit,
+                        attempt_timeout=attempt_timeout,
                     ),
                 )
 
@@ -146,6 +151,8 @@ def on_predicate(
                         wait_gen_kwargs=wait_gen_kwargs,
                         before=before,
                         after=after,
+                        rate_limit=rate_limit,
+                        attempt_timeout=attempt_timeout,
                     ),
                 )
 
@@ -175,6 +182,8 @@ def on_exception(
     sleep: Callable[[float], Any] | None = None,
     before: _Handler | Iterable[_Handler] | None = None,
     after: _Handler | Iterable[_Handler] | None = None,
+    rate_limit: RateLimiter | None = None,
+    attempt_timeout: float | None = None,
     **wait_gen_kwargs: Any,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorate(target: Callable[P, R]) -> Callable[P, R]:
@@ -254,6 +263,8 @@ def on_exception(
                         wait_gen_kwargs=wait_gen_kwargs,
                         before=before,
                         after=after,
+                        rate_limit=rate_limit,
+                        attempt_timeout=attempt_timeout,
                     ),
                 )
 
@@ -286,6 +297,8 @@ def on_exception(
                         wait_gen_kwargs=wait_gen_kwargs,
                         before=before,
                         after=after,
+                        rate_limit=rate_limit,
+                        attempt_timeout=attempt_timeout,
                     ),
                 )
 

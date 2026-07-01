@@ -6,6 +6,8 @@ import logging
 import operator
 import time as time_module
 from collections.abc import Callable, Iterable
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as _FuturesTimeoutError
 from datetime import timedelta
 from typing import Any
 
@@ -34,7 +36,14 @@ from backon._conditions import (
 )
 from backon._context import _retry_context_manager
 from backon._jitter import full_jitter
-from backon._state import Attempt, RetryCallState, RetryState, TryAgain
+from backon._rate_limiter import RateLimiter
+from backon._state import (
+    Attempt,
+    AttemptTimeoutError,
+    RetryCallState,
+    RetryState,
+    TryAgain,
+)
 from backon._typing import (
     _Handler,
     _Jitterer,
@@ -135,6 +144,8 @@ def _retry_loop_sync(
     before=None,
     after=None,
     _holder=None,
+    rate_limit=None,
+    attempt_timeout=None,
 ):
     state = RetryState(target=target)
     start_time = _now()
@@ -146,6 +157,11 @@ def _retry_loop_sync(
     wait = _init_wait_gen(wait_gen, wait_gen_kwargs)
 
     while True:
+        if rate_limit is not None:
+            if not rate_limit.acquire():
+                wt = rate_limit.wait_time()
+                _check_hot_loop()
+                sleep(wt)
         state.tries += 1
         state.elapsed = _now() - start_time
         call_state.attempt_number = state.tries
@@ -157,7 +173,18 @@ def _retry_loop_sync(
             _call_hdlrs(before, state.to_details())
 
             try:
-                ret = target()
+                if attempt_timeout is not None:
+                    _executor = ThreadPoolExecutor(max_workers=1)
+                    _fut = _executor.submit(target)
+                    try:
+                        ret = _fut.result(timeout=attempt_timeout)
+                    except _FuturesTimeoutError:
+                        _fut.cancel()
+                        _executor.shutdown(wait=False)
+                        raise AttemptTimeoutError() from None
+                    _executor.shutdown(wait=False)
+                else:
+                    ret = target()
             except TryAgain:
                 outcome.exception = None
                 outcome.value = None
@@ -187,6 +214,37 @@ def _retry_loop_sync(
                 call_state.outcome_timestamp = _now()
                 call_state.idle_for += call_state.elapsed
                 _call_hdlrs(after, state.to_details())
+
+                if isinstance(exc, AttemptTimeoutError):
+                    if stop(state):
+                        details = state.to_details()
+                        details["exception"] = exc
+                        _call_hdlrs(on_giveup, details)
+                        if retry_error_callback is not None:
+                            return retry_error_callback(details)
+                        if raise_on_giveup:
+                            raise exc from None
+                        return None
+                    try:
+                        seconds = _next_wait(wait, exc, jitter, state.elapsed, max_time)
+                    except StopIteration:
+                        details = state.to_details()
+                        details["exception"] = exc
+                        _call_hdlrs(on_giveup, details)
+                        if raise_on_giveup:
+                            raise exc from None
+                        return None
+                    call_state.upcoming_sleep = seconds
+                    details = state.to_details()
+                    details["wait"] = seconds
+                    details["exception"] = exc
+                    _call_hdlrs(before_sleep, details)
+                    _call_hdlrs(on_backoff, details)
+                    if seconds > 0:
+                        _check_hot_loop()
+                        sleep(seconds)
+                    call_state.idle_for = call_state.idle_for + seconds
+                    continue
 
                 _condition_result = condition(state)
                 if _is_custom_wait(_condition_result):
@@ -317,6 +375,8 @@ async def _retry_loop_async(
     before=None,
     after=None,
     _holder=None,
+    rate_limit=None,
+    attempt_timeout=None,
 ):
     state = RetryState(target=target)
     start_time = _now()
@@ -328,6 +388,11 @@ async def _retry_loop_async(
     wait = _init_wait_gen(wait_gen, wait_gen_kwargs)
 
     while True:
+        if rate_limit is not None:
+            if not rate_limit.acquire():
+                wt = rate_limit.wait_time()
+                _check_hot_loop()
+                await sleep(wt)
         state.tries += 1
         state.elapsed = _now() - start_time
         call_state.attempt_number = state.tries
@@ -339,7 +404,15 @@ async def _retry_loop_async(
             _call_hdlrs(before, state.to_details())
 
             try:
-                ret = await target()
+                if attempt_timeout is not None:
+                    try:
+                            ret = await asyncio.wait_for(
+                                target(), timeout=attempt_timeout
+                            )
+                    except asyncio.TimeoutError:
+                        raise AttemptTimeoutError() from None
+                else:
+                    ret = await target()
             except TryAgain:
                 outcome.exception = None
                 outcome.value = None
@@ -369,6 +442,37 @@ async def _retry_loop_async(
                 call_state.outcome_timestamp = _now()
                 call_state.idle_for += call_state.elapsed
                 await _call_hdlrs_async(after, state.to_details())
+
+                if isinstance(exc, AttemptTimeoutError):
+                    if stop(state):
+                        details = state.to_details()
+                        details["exception"] = exc
+                        await _call_hdlrs_async(on_giveup, details)
+                        if retry_error_callback is not None:
+                            return retry_error_callback(details)
+                        if raise_on_giveup:
+                            raise exc from None
+                        return None
+                    try:
+                        seconds = _next_wait(wait, exc, jitter, state.elapsed, max_time)
+                    except StopIteration:
+                        details = state.to_details()
+                        details["exception"] = exc
+                        await _call_hdlrs_async(on_giveup, details)
+                        if raise_on_giveup:
+                            raise exc from None
+                        return None
+                    call_state.upcoming_sleep = seconds
+                    details = state.to_details()
+                    details["wait"] = seconds
+                    details["exception"] = exc
+                    await _call_hdlrs_async(before_sleep, details)
+                    await _call_hdlrs_async(on_backoff, details)
+                    if seconds > 0:
+                        _check_hot_loop()
+                        await sleep(seconds)
+                    call_state.idle_for = call_state.idle_for + seconds
+                    continue
 
                 _condition_result = condition(state)
                 if _is_custom_wait(_condition_result):
@@ -501,6 +605,8 @@ def _retry_sync_inner(
     before=None,
     after=None,
     _holder=None,
+    rate_limit=None,
+    attempt_timeout=None,
 ):
     if not is_enabled():
         return target()
@@ -530,6 +636,8 @@ def _retry_sync_inner(
         before=before,
         after=after,
         _holder=_holder,
+        rate_limit=rate_limit,
+        attempt_timeout=attempt_timeout,
     )
 
 
@@ -554,6 +662,8 @@ async def _retry_async_inner(
     before=None,
     after=None,
     _holder=None,
+    rate_limit=None,
+    attempt_timeout=None,
 ):
     if not is_enabled():
         return await target()
@@ -583,6 +693,8 @@ async def _retry_async_inner(
         before=before,
         after=after,
         _holder=_holder,
+        rate_limit=rate_limit,
+        attempt_timeout=attempt_timeout,
     )
 
 
@@ -613,6 +725,8 @@ def _retry_sync(
     before: _Handler | Iterable[_Handler] | None = None,
     after: _Handler | Iterable[_Handler] | None = None,
     _holder: dict | None = None,
+    rate_limit: RateLimiter | None = None,
+    attempt_timeout: float | None = None,
 ) -> Any:
     if wait_gen_kwargs is None:
         wait_gen_kwargs = {}
@@ -664,6 +778,8 @@ def _retry_sync(
         before=before,
         after=after,
         _holder=_holder,
+        rate_limit=rate_limit,
+        attempt_timeout=attempt_timeout,
     )
 
 
@@ -694,6 +810,8 @@ async def _retry_async(
     before: _Handler | Iterable[_Handler] | None = None,
     after: _Handler | Iterable[_Handler] | None = None,
     _holder: dict | None = None,
+    rate_limit: RateLimiter | None = None,
+    attempt_timeout: float | None = None,
 ) -> Any:
     if wait_gen_kwargs is None:
         wait_gen_kwargs = {}
@@ -745,6 +863,8 @@ async def _retry_async(
         before=before,
         after=after,
         _holder=_holder,
+        rate_limit=rate_limit,
+        attempt_timeout=attempt_timeout,
     )
 
 
@@ -774,6 +894,8 @@ def retry(
     name: str = "",
     before: _Handler | Iterable[_Handler] | None = None,
     after: _Handler | Iterable[_Handler] | None = None,
+    rate_limit: RateLimiter | None = None,
+    attempt_timeout: float | None = None,
     **wait_gen_kwargs: Any,
 ) -> Any:
     if inspect.iscoroutinefunction(target):
@@ -802,6 +924,8 @@ def retry(
             wait_gen_kwargs=wait_gen_kwargs,
             before=before,
             after=after,
+            rate_limit=rate_limit,
+            attempt_timeout=attempt_timeout,
         )
     return _retry_sync(
         target,
@@ -828,6 +952,8 @@ def retry(
         wait_gen_kwargs=wait_gen_kwargs,
         before=before,
         after=after,
+        rate_limit=rate_limit,
+        attempt_timeout=attempt_timeout,
     )
 
 
@@ -886,6 +1012,8 @@ class Retrying:
         name: str = "",
         before: _Handler | Iterable[_Handler] | None = None,
         after: _Handler | Iterable[_Handler] | None = None,
+        rate_limit: RateLimiter | None = None,
+        attempt_timeout: float | None = None,
         **wait_gen_kwargs: Any,
     ):
         self._wait_gen = wait_gen
@@ -913,6 +1041,8 @@ class Retrying:
         self._before = before
         self._after = after
         self._wait_gen_kwargs = wait_gen_kwargs
+        self._rate_limit = rate_limit
+        self._attempt_timeout = attempt_timeout
         self._state: RetryState | None = None
         self._call_state: RetryCallState | None = None
 
@@ -1037,6 +1167,8 @@ class Retrying:
             name=self._name,
             before=self._before,
             after=self._after,
+            rate_limit=self._rate_limit,
+            attempt_timeout=self._attempt_timeout,
             **self._wait_gen_kwargs,
         )
 
@@ -1078,6 +1210,8 @@ class Retrying:
                 before=self._before,
                 after=self._after,
                 _holder=_holder,
+                rate_limit=self._rate_limit,
+                attempt_timeout=self._attempt_timeout,
             )
             return result
         finally:
@@ -1118,6 +1252,8 @@ class Retrying:
                 before=self._before,
                 after=self._after,
                 _holder=_holder,
+                rate_limit=self._rate_limit,
+                attempt_timeout=self._attempt_timeout,
             )
             return result
         finally:
@@ -1126,6 +1262,8 @@ class Retrying:
 
 
 def sleep_using_event(event) -> Callable[[float], None]:
+    """Return a sleep function that blocks on an event's wait timeout."""
+
     def sleep(seconds: float) -> None:
         event.wait(timeout=seconds)
 
@@ -1141,6 +1279,8 @@ class RetryingCaller:
         max_tries: int | None = None,
         max_time: float | None = None,
         jitter: _Jitterer | None = full_jitter,
+        rate_limit: RateLimiter | None = None,
+        attempt_timeout: float | None = None,
         **wait_gen_kwargs: Any,
     ) -> None:
         self._wait_gen = wait_gen
@@ -1148,6 +1288,8 @@ class RetryingCaller:
         self._max_tries = max_tries
         self._max_time = max_time
         self._jitter = jitter
+        self._rate_limit = rate_limit
+        self._attempt_timeout = attempt_timeout
         self._wait_gen_kwargs = wait_gen_kwargs
 
     def on(self, exception: type[Exception]) -> RetryingCaller:
@@ -1156,6 +1298,11 @@ class RetryingCaller:
         return new
 
     def __call__(self, target: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        if inspect.iscoroutinefunction(target):
+            raise TypeError(
+                "Use AsyncRetryingCaller for async functions, "
+                "or pass a sync function"
+            )
         return _retry_sync(
             lambda: target(*args, **kwargs),
             self._wait_gen,
@@ -1164,6 +1311,8 @@ class RetryingCaller:
             max_time=self._max_time,
             jitter=self._jitter,
             wait_gen_kwargs=self._wait_gen_kwargs or None,
+            rate_limit=self._rate_limit,
+            attempt_timeout=self._attempt_timeout,
         )
 
     def copy(self) -> RetryingCaller:
@@ -1173,6 +1322,8 @@ class RetryingCaller:
             max_tries=self._max_tries,
             max_time=self._max_time,
             jitter=self._jitter,
+            rate_limit=self._rate_limit,
+            attempt_timeout=self._attempt_timeout,
             **self._wait_gen_kwargs,
         )
 
@@ -1186,6 +1337,8 @@ class AsyncRetryingCaller:
         max_tries: int | None = None,
         max_time: float | None = None,
         jitter: _Jitterer | None = full_jitter,
+        rate_limit: RateLimiter | None = None,
+        attempt_timeout: float | None = None,
         **wait_gen_kwargs: Any,
     ) -> None:
         self._wait_gen = wait_gen
@@ -1193,6 +1346,8 @@ class AsyncRetryingCaller:
         self._max_tries = max_tries
         self._max_time = max_time
         self._jitter = jitter
+        self._rate_limit = rate_limit
+        self._attempt_timeout = attempt_timeout
         self._wait_gen_kwargs = wait_gen_kwargs
 
     def on(self, exception: type[Exception]) -> AsyncRetryingCaller:
@@ -1203,14 +1358,19 @@ class AsyncRetryingCaller:
     async def __call__(
         self, target: Callable[..., Any], *args: Any, **kwargs: Any
     ) -> Any:
+        async def wrapped():
+            return await target(*args, **kwargs)
+
         return await _retry_async(
-            lambda: target(*args, **kwargs),
+            wrapped,
             self._wait_gen,
             exception=self._exception,
             max_tries=self._max_tries,
             max_time=self._max_time,
             jitter=self._jitter,
             wait_gen_kwargs=self._wait_gen_kwargs or None,
+            rate_limit=self._rate_limit,
+            attempt_timeout=self._attempt_timeout,
         )
 
     def copy(self) -> AsyncRetryingCaller:
@@ -1220,5 +1380,7 @@ class AsyncRetryingCaller:
             max_tries=self._max_tries,
             max_time=self._max_time,
             jitter=self._jitter,
+            rate_limit=self._rate_limit,
+            attempt_timeout=self._attempt_timeout,
             **self._wait_gen_kwargs,
         )

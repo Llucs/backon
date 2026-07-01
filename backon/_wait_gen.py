@@ -185,13 +185,16 @@ def _wait_exception(
 wait_exception = _Wait(_wait_exception)
 
 
-def wait_random(min: float = 0, max: float = 1) -> Generator[float, None, None]:
+def _wait_random(min: float = 0, max: float = 1) -> Generator[float, None, None]:
     yield 0.0
     while True:
         yield random.uniform(min, max)
 
 
-def wait_exponential_jitter(
+wait_random = _Wait(_wait_random)
+
+
+def _wait_exponential_jitter(
     initial: float = 1,
     max: float = 60,
     exp_base: float = 2,
@@ -206,7 +209,13 @@ def wait_exponential_jitter(
         n += 1
 
 
-def wait_none() -> Generator[float, None, None]:
+wait_exponential_jitter = _Wait(_wait_exponential_jitter)
+
+
+def _wait_none() -> Generator[float, None, None]:
     yield 0.0
     while True:
         yield 0.0
+
+
+wait_none = _Wait(_wait_none)

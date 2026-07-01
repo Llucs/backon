@@ -1,4 +1,6 @@
 import functools
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as _FuturesTimeoutError
 
 from backon._common import (
     _elapsed,
@@ -8,6 +10,7 @@ from backon._common import (
     _now,
     is_enabled,
 )
+from backon._state import AttemptTimeoutError
 
 
 def _unwrap(target):
@@ -43,6 +46,7 @@ def retry_predicate(
     on_attempt,
     sleep,
     wait_gen_kwargs,
+    attempt_timeout=None,
 ):
     target = _unwrap(target)
 
@@ -70,7 +74,32 @@ def retry_predicate(
 
             _call_handlers(on_attempt, **details)
 
-            ret = target(*args, **kwargs)
+            try:
+                if attempt_timeout is not None:
+                    with ThreadPoolExecutor(max_workers=1) as _executor:
+                        fut = _executor.submit(target, *args, **kwargs)
+                        try:
+                            ret = fut.result(timeout=attempt_timeout)
+                        except _FuturesTimeoutError:
+                            raise AttemptTimeoutError() from None
+                else:
+                    ret = target(*args, **kwargs)
+            except AttemptTimeoutError:
+                max_tries_exceeded = tries == max_tries_value
+                max_time_exceeded = (
+                    max_time_value is not None and elapsed >= max_time_value
+                )
+                if max_tries_exceeded or max_time_exceeded:
+                    _call_handlers(on_giveup, **details)
+                    break
+                try:
+                    seconds = _next_wait(wait, None, jitter, elapsed, max_time_value)
+                except StopIteration:
+                    _call_handlers(on_giveup, **details)
+                    break
+                _call_handlers(on_backoff, **details, wait=seconds)
+                sleep(seconds)
+                continue
             if predicate(ret):
                 max_tries_exceeded = tries == max_tries_value
                 max_time_exceeded = (
@@ -116,6 +145,7 @@ def retry_exception(
     raise_on_giveup,
     sleep,
     wait_gen_kwargs,
+    attempt_timeout=None,
 ):
     target = _unwrap(target)
 
@@ -144,7 +174,34 @@ def retry_exception(
             _call_handlers(on_attempt, **details)
 
             try:
-                ret = target(*args, **kwargs)
+                if attempt_timeout is not None:
+                    with ThreadPoolExecutor(max_workers=1) as _executor:
+                        fut = _executor.submit(target, *args, **kwargs)
+                        try:
+                            ret = fut.result(timeout=attempt_timeout)
+                        except _FuturesTimeoutError:
+                            raise AttemptTimeoutError() from None
+                else:
+                    ret = target(*args, **kwargs)
+            except AttemptTimeoutError:
+                max_tries_exceeded = tries == max_tries_value
+                max_time_exceeded = (
+                    max_time_value is not None and elapsed >= max_time_value
+                )
+                if max_tries_exceeded or max_time_exceeded:
+                    _call_handlers(on_giveup, **details)
+                    if raise_on_giveup:
+                        raise
+                    return None
+                try:
+                    seconds = _next_wait(wait, None, jitter, elapsed, max_time_value)
+                except StopIteration:
+                    _call_handlers(on_giveup, **details)
+                    if raise_on_giveup:
+                        raise
+                    return None
+                _call_handlers(on_backoff, **details, wait=seconds)
+                sleep(seconds)
             except exception as e:
                 max_tries_exceeded = tries == max_tries_value
                 max_time_exceeded = (

@@ -10,6 +10,7 @@ from backon._common import (
     _now,
     is_enabled,
 )
+from backon._state import AttemptTimeoutError
 
 try:
     import trio  # noqa: F401
@@ -68,6 +69,7 @@ def retry_predicate(
     on_attempt,
     sleep,
     wait_gen_kwargs,
+    attempt_timeout=None,
 ):
     if not _trio_available:
         raise RuntimeError("trio is not installed")
@@ -107,7 +109,30 @@ def retry_predicate(
 
             await _call_handlers(on_attempt, **details)
 
-            ret = await target(*args, **kwargs)
+            try:
+                if attempt_timeout is not None:
+                    with trio.fail_after(attempt_timeout):
+                        ret = await target(*args, **kwargs)
+                else:
+                    ret = await target(*args, **kwargs)
+            except trio.TooSlowError:
+                raise AttemptTimeoutError() from None
+            except AttemptTimeoutError:
+                max_tries_exceeded = tries == max_tries_value
+                max_time_exceeded = (
+                    max_time_value is not None and elapsed >= max_time_value
+                )
+                if max_tries_exceeded or max_time_exceeded:
+                    await _call_handlers(on_giveup, **details)
+                    break
+                try:
+                    seconds = _next_wait(wait, None, jitter, elapsed, max_time_value)
+                except StopIteration:
+                    await _call_handlers(on_giveup, **details)
+                    break
+                await _call_handlers(on_backoff, **details, wait=seconds)
+                await sleep(seconds)
+                continue
             if predicate(ret):
                 max_tries_exceeded = tries == max_tries_value
                 max_time_exceeded = (
@@ -153,6 +178,7 @@ def retry_exception(
     raise_on_giveup,
     sleep,
     wait_gen_kwargs,
+    attempt_timeout=None,
 ):
     if not _trio_available:
         raise RuntimeError("trio is not installed")
@@ -192,7 +218,32 @@ def retry_exception(
             await _call_handlers(on_attempt, **details)
 
             try:
-                ret = await target(*args, **kwargs)
+                if attempt_timeout is not None:
+                    with trio.fail_after(attempt_timeout):
+                        ret = await target(*args, **kwargs)
+                else:
+                    ret = await target(*args, **kwargs)
+            except trio.TooSlowError:
+                raise AttemptTimeoutError() from None
+            except AttemptTimeoutError:
+                max_tries_exceeded = tries == max_tries_value
+                max_time_exceeded = (
+                    max_time_value is not None and elapsed >= max_time_value
+                )
+                if max_tries_exceeded or max_time_exceeded:
+                    await _call_handlers(on_giveup, **details)
+                    if raise_on_giveup:
+                        raise
+                    return None
+                try:
+                    seconds = _next_wait(wait, None, jitter, elapsed, max_time_value)
+                except StopIteration:
+                    await _call_handlers(on_giveup, **details)
+                    if raise_on_giveup:
+                        raise
+                    return None
+                await _call_handlers(on_backoff, **details, wait=seconds)
+                await sleep(seconds)
             except exception as e:
                 giveup_result = await giveup(e)
                 max_tries_exceeded = tries == max_tries_value

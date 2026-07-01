@@ -1,3 +1,15 @@
+## 3.7.0 - 2026-07-01
+
+- Add `RateLimiter` + `RateLimitError` — sliding window rate limiter integrated into all retry loops
+- Add `attempt_timeout` parameter — per-attempt timeout via `ThreadPoolExecutor` (sync) or `asyncio.wait_for` (async)
+- Export all hidden modules to public API: `CircuitBreaker`, `BreakerRetrying`, `hedge`, `on_hedge`, `HedgingRetrying`, `PrometheusMetrics`, `OTelMetrics`, `disable_retries`, `test_config`, `assert_retried`, `wait_random`, `wait_exponential_jitter`, `wait_none`, `Details`, `retry_if_not_exception_type`, `retry_unless_exception_type`, `retry_if_not_exception_message`, `retry_if_exception_cause_type`
+- Fix `RetryingCaller` to raise `TypeError` for async targets (use `AsyncRetryingCaller` instead)
+- Fix `AsyncRetryingCaller` to properly use `async def wrapped()` wrapper
+- Fix `ThreadPoolExecutor` shutdown in attempt_timeout to use `wait=False` / cancel futures
+- Wrap `wait_random`, `wait_exponential_jitter`, `wait_none` as `_Wait` objects for `+` composition
+- Add docstrings to `TryAgain`, `RetryError`, `AttemptTimeoutError`, `sleep_using_event`
+- Rewrite README.md in Standard README format covering all v3.7.0 features
+
 ## 3.6.1 - 2026-06-30
 
 - Fix CI: coverage 88% → 91%, ruff formatting

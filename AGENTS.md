@@ -24,6 +24,16 @@
 - Line length: 88 characters.
 - Use ruff with default rules (E, F, W, I).
 
+## README
+
+- `README.md` is the single source of truth for users. Every feature exported in `__all__` must be documented in the README.
+- After adding a new feature, wait generator, condition, parameter, or public symbol:
+  1. Add it to the appropriate README section (API Reference, Wait Generators, Conditions, etc.).
+  2. If it needs a code example, add one.
+  3. Run `python3 -c "import backon; assert '<your_feature>' in dir(backon)"` to confirm it's exported.
+  4. Verify the README badge is still accurate (e.g., coverage percentage).
+- The README must use the Standard README format, be truthful, and have every claim backed by the codebase.
+
 ## Architecture
 
 - Zero external dependencies. The stdlib is all you get.

@@ -8,6 +8,7 @@
 [![PyPI](https://img.shields.io/pypi/v/backon.svg)](https://pypi.org/project/backon/)
 [![Python](https://img.shields.io/pypi/pyversions/backon.svg)](https://pypi.org/project/backon/)
 [![License](https://img.shields.io/pypi/l/backon.svg)](https://github.com/Llucs/backon/blob/main/LICENSE)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/backon?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/backon)
 
 backon is a modern evolution of [backoff](https://github.com/litl/backoff) — a zero-dependency Python library for retry with exponential backoff. It provides decorator, functional, and context manager APIs for both sync and async code.
 

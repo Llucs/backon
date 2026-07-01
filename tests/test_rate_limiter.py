@@ -40,8 +40,11 @@ class TestRateLimiter:
         calls = []
 
         @backon.on_exception(
-            backon.expo, ValueError,
-            max_tries=3, jitter=None, rate_limit=rl,
+            backon.expo,
+            ValueError,
+            max_tries=3,
+            jitter=None,
+            rate_limit=rl,
         )
         def f():
             calls.append(1)
@@ -60,8 +63,11 @@ class TestRateLimiter:
             return "ok"
 
         result = backon.retry(
-            f, backon.expo,
-            max_tries=3, jitter=None, rate_limit=rl,
+            f,
+            backon.expo,
+            max_tries=3,
+            jitter=None,
+            rate_limit=rl,
         )
         assert result == "ok"
         assert len(calls) == 1
@@ -70,8 +76,11 @@ class TestRateLimiter:
         rl = RateLimiter(max_calls=100, period=1.0)
 
         @backon.on_exception(
-            backon.expo, RuntimeError,
-            max_tries=3, jitter=None, rate_limit=rl,
+            backon.expo,
+            RuntimeError,
+            max_tries=3,
+            jitter=None,
+            rate_limit=rl,
         )
         def fail_twice():
             fail_twice.calls += 1

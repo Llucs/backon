@@ -58,8 +58,11 @@ class TestAttemptTimeoutSync:
 
         try:
             backon.retry(
-                f, backon.expo,
-                max_tries=3, jitter=None, attempt_timeout=0.01,
+                f,
+                backon.expo,
+                max_tries=3,
+                jitter=None,
+                attempt_timeout=0.01,
             )
         except Exception:
             pass
@@ -75,7 +78,9 @@ class TestAttemptTimeoutSync:
 
         r = backon.Retrying(
             backon.expo,
-            max_tries=3, jitter=None, attempt_timeout=0.01,
+            max_tries=3,
+            jitter=None,
+            attempt_timeout=0.01,
         )
         try:
             r.call(f)
@@ -93,7 +98,9 @@ class TestAttemptTimeoutSync:
 
         caller = backon.RetryingCaller(
             backon.expo,
-            max_tries=3, jitter=None, attempt_timeout=0.01,
+            max_tries=3,
+            jitter=None,
+            attempt_timeout=0.01,
         )
         try:
             caller(f)
@@ -154,8 +161,11 @@ class TestAttemptTimeoutAsync:
 
         try:
             await backon.retry(
-                f, backon.expo,
-                max_tries=3, jitter=None, attempt_timeout=0.01,
+                f,
+                backon.expo,
+                max_tries=3,
+                jitter=None,
+                attempt_timeout=0.01,
             )
         except Exception:
             pass
@@ -172,7 +182,9 @@ class TestAttemptTimeoutAsync:
 
         r = backon.Retrying(
             backon.expo,
-            max_tries=3, jitter=None, attempt_timeout=0.01,
+            max_tries=3,
+            jitter=None,
+            attempt_timeout=0.01,
         )
         try:
             await r.async_call(f)
@@ -191,7 +203,9 @@ class TestAttemptTimeoutAsync:
 
         caller = backon.AsyncRetryingCaller(
             backon.expo,
-            max_tries=3, jitter=None, attempt_timeout=0.01,
+            max_tries=3,
+            jitter=None,
+            attempt_timeout=0.01,
         )
         try:
             await caller(f)

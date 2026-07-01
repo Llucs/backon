@@ -39,7 +39,6 @@ class RateLimiter:
     def __call__(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         if not self.acquire():
             raise RateLimitError(
-                f"Rate limit of {self._max_calls} calls per {self._period}s"
-                " exceeded"
+                f"Rate limit of {self._max_calls} calls per {self._period}s exceeded"
             )
         return fn(*args, **kwargs)

@@ -406,9 +406,7 @@ async def _retry_loop_async(
             try:
                 if attempt_timeout is not None:
                     try:
-                            ret = await asyncio.wait_for(
-                                target(), timeout=attempt_timeout
-                            )
+                        ret = await asyncio.wait_for(target(), timeout=attempt_timeout)
                     except asyncio.TimeoutError:
                         raise AttemptTimeoutError() from None
                 else:
@@ -1300,8 +1298,7 @@ class RetryingCaller:
     def __call__(self, target: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         if inspect.iscoroutinefunction(target):
             raise TypeError(
-                "Use AsyncRetryingCaller for async functions, "
-                "or pass a sync function"
+                "Use AsyncRetryingCaller for async functions, or pass a sync function"
             )
         return _retry_sync(
             lambda: target(*args, **kwargs),

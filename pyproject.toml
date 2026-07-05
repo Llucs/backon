@@ -10,7 +10,16 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
-keywords = ["retry", "backoff", "decorators"]
+keywords = [
+  "retry",
+  "backoff",
+  "decorator",
+  "decorators",
+  "resilience",
+  "fault-tolerance",
+  "error-handling",
+  "python",
+]
 
 authors = [
     { name = "Llucs", email = "c307lucas@gmail.com" },

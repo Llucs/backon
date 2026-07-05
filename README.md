@@ -17,6 +17,10 @@
     <img src="https://github.com/Llucs/backon/actions/workflows/codeql.yml/badge.svg" />
   </a>
 
+  <a href="https://codecov.io/gh/Llucs/backon">
+    <img src="https://codecov.io/gh/Llucs/backon/branch/main/graph/badge.svg" />
+  </a>
+
   <a href="https://pypi.org/project/backon/">
     <img src="https://img.shields.io/pypi/v/backon.svg" />
   </a>

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/circle_logo.svg" width="165" />
+  <img src="./assets/circle_logo.svg" width="160" />
 </p>
 
 <h1 align="center">backon</h1>

@@ -8,13 +8,31 @@
   Function decoration for backoff and retry — modern, fast, zero dependencies.
 </p>
 
-[![CI](https://github.com/Llucs/backon/actions/workflows/ci.yml/badge.svg)](https://github.com/Llucs/backon/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen)](https://github.com/Llucs/backon/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/Llucs/backon/actions/workflows/codeql.yml/badge.svg)](https://github.com/Llucs/backon/actions/workflows/codeql.yml)
-[![PyPI](https://img.shields.io/pypi/v/backon.svg)](https://pypi.org/project/backon/)
-[![Python](https://img.shields.io/pypi/pyversions/backon.svg)](https://pypi.org/project/backon/)
-[![License](https://img.shields.io/pypi/l/backon.svg)](https://github.com/Llucs/backon/blob/main/LICENSE)
-[![PyPI Downloads](https://static.pepy.tech/personalized-badge/backon?period=total&units=INTERNATIONAL_SYSTEM&left_color=GRAY&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/backon)
+<p align="center">
+  <a href="https://github.com/Llucs/backon/actions/workflows/ci.yml">
+    <img src="https://github.com/Llucs/backon/actions/workflows/ci.yml/badge.svg" />
+  </a>
+
+  <a href="https://github.com/Llucs/backon/actions/workflows/codeql.yml">
+    <img src="https://github.com/Llucs/backon/actions/workflows/codeql.yml/badge.svg" />
+  </a>
+
+  <a href="https://pypi.org/project/backon/">
+    <img src="https://img.shields.io/pypi/v/backon.svg" />
+  </a>
+
+  <a href="https://pypi.org/project/backon/">
+    <img src="https://img.shields.io/pypi/pyversions/backon.svg" />
+  </a>
+
+  <a href="https://github.com/Llucs/backon/blob/main/LICENSE">
+    <img src="https://img.shields.io/pypi/l/backon.svg" />
+  </a>
+
+  <a href="https://pepy.tech/projects/backon">
+    <img src="https://static.pepy.tech/personalized-badge/backon?period=total&units=INTERNATIONAL_SYSTEM&left_color=GRAY&right_color=GREEN&left_text=downloads" />
+  </a>
+</p>
 
 backon is a modern evolution of [backoff](https://github.com/litl/backoff) — a zero-dependency Python library for retry with exponential backoff. It provides decorator, functional, and context manager APIs for both sync and async code.
 

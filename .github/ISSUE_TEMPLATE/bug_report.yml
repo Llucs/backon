@@ -1,0 +1,46 @@
+name: Bug Report
+description: Report a bug to help us improve
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: Steps to reproduce the behavior, including a minimal code example if possible
+      placeholder: |
+        1. Install backon
+        2. Run this code...
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Examples:
+          - **OS**: Ubuntu 24.04
+          - **Python**: 3.12
+          - **backon version**: 3.7.3
+      value: |
+        - OS:
+        - Python:
+        - backon version:
+    validations:
+      required: true

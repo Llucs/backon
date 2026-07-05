@@ -4,16 +4,19 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.5.0
         with:
           python-version: "3.11"
           cache: pip
@@ -29,6 +32,6 @@ jobs:
           pdm run pytest --cov=backon --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v7
+        uses: codecov/codecov-action@0565863a31f2c772f9fbb50e41978556f51010a5 # v5.4.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

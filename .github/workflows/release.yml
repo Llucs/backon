@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -11,15 +14,21 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.5.0
         with:
           python-version: "3.12"
           cache: pip
+
       - run: pip install pdm
+
       - run: pdm install -G lint -G test
+
       - run: pdm run pytest tests/ -q
+
       - run: pdm run ruff check backon/
+
       - run: pdm run mypy backon/
 
   build:
@@ -29,14 +38,18 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.5.0
         with:
           python-version: "3.12"
           cache: pip
+
       - run: pip install pdm
+
       - run: pdm build
-      - uses: actions/upload-artifact@v7
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: Packages
           path: dist/*
@@ -51,11 +64,13 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@95815c38cf0ffb484b702c4faba4891eef54c917 # v4.2.1
         with:
           name: Packages
           path: dist
-      - uses: actions/attest-build-provenance@v4
+
+      - uses: actions/attest-build-provenance@c074ebf1a1cf6c3d1b0ddc116f75866807e08688 # v2.2.3
         with:
           subject-path: "dist/*"
-      - uses: pypa/gh-action-pypi-publish@release/v1
+
+      - uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4

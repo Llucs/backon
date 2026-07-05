@@ -1,0 +1,35 @@
+name: Security Audit
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "pyproject.toml"
+      - "pdm.lock"
+  pull_request:
+    branches: [main]
+    paths:
+      - "pyproject.toml"
+      - "pdm.lock"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.5.0
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Audit dependencies
+        run: pip-audit --strict --desc on

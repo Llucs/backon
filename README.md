@@ -1,6 +1,8 @@
-<img src="assets/square_logo.svg" width="170" />
+<p align="center">
+  <img src="./assets/square_logo.svg" width="170" />
+</p>
 
-# backon
+<h1 align="center">backon</h1>
 
 > Function decoration for backoff and retry — modern, fast, zero dependencies.
 

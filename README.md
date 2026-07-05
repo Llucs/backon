@@ -1,10 +1,12 @@
 <p align="center">
-  <img src="./assets/square_logo.svg" width="170" />
+  <img src="./assets/circle_logo.svg" width="170" />
 </p>
 
 <h1 align="center">backon</h1>
 
-> Function decoration for backoff and retry — modern, fast, zero dependencies.
+<p align="center">
+  Function decoration for backoff and retry — modern, fast, zero dependencies.
+</p>
 
 [![CI](https://github.com/Llucs/backon/actions/workflows/ci.yml/badge.svg)](https://github.com/Llucs/backon/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen)](https://github.com/Llucs/backon/actions/workflows/ci.yml)

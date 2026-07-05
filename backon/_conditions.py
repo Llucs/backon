@@ -204,17 +204,8 @@ class retry_if_not_exception_type(RetryCondition):
         return exc is not None and not isinstance(exc, self.exc_types)
 
 
-class retry_unless_exception_type(RetryCondition):
-    def __init__(self, exc_types: type[Exception] | Sequence[type[Exception]]) -> None:
-        if isinstance(exc_types, type):
-            exc_types = (exc_types,)
-        self.exc_types = tuple(exc_types)
-
-    def __call__(self, state: RetryState) -> bool:
-        if state.outcome is None:
-            return False
-        exc = state.outcome.exception
-        return exc is not None and not isinstance(exc, self.exc_types)
+class retry_unless_exception_type(retry_if_not_exception_type):
+    pass
 
 
 class retry_if_not_exception_message(RetryCondition):

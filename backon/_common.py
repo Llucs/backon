@@ -1,11 +1,21 @@
+from __future__ import annotations
+
 import functools
 import logging
+import threading
 import time as time_module
+from typing import Any
 
 _logger = logging.getLogger("backon")
 _logger.addHandler(logging.NullHandler())
 
 _GLOBAL_ENABLED = True
+
+_TEST_CONFIG: dict[str, Any] = {
+    "max_retries": None,
+    "backoff_multiplier": 1.0,
+    "max_backoff": None,
+}
 
 
 def disable():
@@ -46,10 +56,19 @@ def _next_wait(wait, send_value, jitter, elapsed, max_time):
     else:
         seconds = value
 
+    seconds *= _TEST_CONFIG["backoff_multiplier"]
+
     if max_time is not None:
         seconds = min(seconds, max_time - elapsed)
 
     return seconds
+
+
+def _apply_test_overrides(max_tries=None, max_time=None):
+    tc = _TEST_CONFIG
+    if tc["max_retries"] is not None:
+        max_tries = tc["max_retries"]
+    return max_tries, max_time
 
 
 def _prepare_logger(logger):

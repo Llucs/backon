@@ -1,3 +1,15 @@
+## 3.7.1 - 2026-07-05
+
+- Fix `assert_retried()` — now properly drives retries through `_retry_sync_inner` instead of direct call
+- Fix `test_config()` / `limit_retries()` / `remove_backoff()` — no longer no-ops; now modify `_common._TEST_CONFIG` which is read by all retry loops
+- Fix `retry_unless_exception_type` — now inherits from `retry_if_not_exception_type`, removing duplicate code
+- Remove coverage `omit` — all modules now count toward the 95% coverage threshold (actual: 98.23%)
+- Fix Iterator API `Retrying.__iter__` — uses meaningful target name instead of `lambda: None`
+- Fix `_hot_loop_data` thread-safety — guarded by `threading.Lock`
+- Refactor `_retry_loop_sync`/`_async` — extract shared decision logic into `_decide_outcome`, reducing ~460 lines of duplicate logic to ~140
+- Split `_retry.py` (1277 lines) into 7 focused submodules under `_retry/` package
+- Cover 98.23% of codebase (+39 new tests across edge cases, thread-safety, circuit breaker, wait generators)
+
 ## 3.7.0 - 2026-07-01
 
 - Add `RateLimiter` + `RateLimitError` — sliding window rate limiter integrated into all retry loops

@@ -13,3 +13,4 @@ dist/
 *.whl
 *.tar.gz
 .coverage
+coverage.xml

@@ -85,7 +85,7 @@ backon is a modern evolution of [backoff](https://github.com/litl/backoff) — a
 - **Zero dependencies** — pure Python, stdlib only
 - **Four APIs** — decorator (`@on_exception`, `@on_predicate`), functional (`retry()`), context manager (`Retrying`), callable (`RetryingCaller` / `AsyncRetryingCaller`)
 - **Async native** — same API works for `async def` functions
-- **Full type hints** — validated with mypy, strict mode compatible
+- **Full type hints** — validated with mypy, py.typed included
 - **Global toggle** — `backon.disable()` / `backon.enable()` for testing
 - **Custom sleep** — inject your own sleep function (useful for testing with `asyncio.Event`)
 - **Multiple wait strategies** — exponential, constant, Fibonacci, decay, runtime, randomized, incremental, and composable chains
@@ -194,6 +194,8 @@ def fetch():
 | `backoff_log_level` | `int` | `logging.INFO` | Log level for backoff messages |
 | `giveup_log_level` | `int` | `logging.ERROR` | Log level for giveup messages |
 | `sleep` | `Callable[[float], Any]` | `None` | Custom sleep function |
+| `rate_limit` | `RateLimiter` or `None` | `None` | Rate limiter to throttle retry calls |
+| `attempt_timeout` | `float` or `None` | `None` | Maximum time in seconds for a single attempt |
 | `**wait_gen_kwargs` | varies | — | Extra kwargs passed to the wait generator (e.g. `base=3`, `interval=0.5`) |
 
 #### `@backon.on_predicate(wait_gen, predicate, ...)`
@@ -206,7 +208,7 @@ def poll():
     ...
 ```
 
-Accepts all parameters from `on_exception` except `exception`, `giveup`, and `raise_on_giveup`. Adds:
+Accepts all parameters from `on_exception` except `exception` and `giveup`. Adds:
 
 | Argument | Type | Default | Description |
 |---|---|---|---|
@@ -344,7 +346,7 @@ Retry conditions determine *whether* a retry should happen. They can be composed
 
 | Condition | Description |
 |---|---|
-| `retry_if_exception_type(*types)` | Retry if exception is an instance of given type(s) |
+| `retry_if_exception_type(exc_types)` | Retry if exception is an instance of given type(s) — accepts a single type or a tuple of types |
 | `retry_if_exception(predicate)` | Retry if the exception matches a custom predicate |
 | `retry_if_exception_message(message, match=None)` | Retry if exception message contains a string (or matches regex with `match="re"`) |
 | `retry_if_result(predicate)` | Retry if the return value matches a predicate |
@@ -353,6 +355,10 @@ Retry conditions determine *whether* a retry should happen. They can be composed
 | `retry_any(*conditions)` | Retry when any condition passes |
 | `retry_always()` | Always retry |
 | `retry_never()` | Never retry |
+| `retry_if_exception_cause_type(exc_types)` | Retry if the exception's cause chain matches the given type(s) |
+| `retry_if_not_exception_type(exc_types)` | Retry if exception is NOT an instance of the given type(s) |
+| `retry_if_not_exception_message(match, regex=False)` | Retry if exception message does NOT contain the given string |
+| `retry_unless_exception_type(exc_types)` | Alias for `retry_if_not_exception_type` |
 
 ```python
 from backon import retry_if_exception_type, retry_if_exception_message, retry_all
@@ -477,6 +483,38 @@ async def f():
 ---
 
 ## Advanced Features
+
+### Rate Limiter
+
+Throttle retry calls to avoid overwhelming a backend.
+
+```python
+from backon import RateLimiter
+
+limiter = RateLimiter(max_calls=10, period=1.0)  # max 10 calls per second
+
+@backon.on_exception(backon.expo, ValueError, max_tries=5, rate_limit=limiter)
+def fetch():
+    ...
+```
+
+`RateLimitError` is raised when the rate limit is exceeded outside of retry context.
+
+### TryAgain
+
+Raise `TryAgain` inside a retried function to force an immediate retry, bypassing any condition or stop logic:
+
+```python
+import backon
+from backon import TryAgain
+
+@backon.on_exception(backon.expo, ValueError, max_tries=3)
+def fetch():
+    try:
+        return api.call()
+    except TemporaryIssue:
+        raise TryAgain()
+```
 
 ### Circuit Breaker
 

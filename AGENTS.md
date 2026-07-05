@@ -13,6 +13,7 @@
 3. Run `pytest tests/ -q` — all tests must pass.
 4. If you added a feature, you must add tests for it.
 5. If you fixed a bug, add a test that would have caught it.
+6. **Verify README is up to date**: every symbol in `__all__` must be documented, every parameter table must reflect the actual signatures, and every claim must be backed by the code.
 
 ## Code Style
 
@@ -33,6 +34,7 @@
   3. Run `python3 -c "import backon; assert '<your_feature>' in dir(backon)"` to confirm it's exported.
   4. Verify the README badge is still accurate (e.g., coverage percentage).
 - The README must use the Standard README format, be truthful, and have every claim backed by the codebase.
+- When removing or changing a feature, remove/update the corresponding README documentation immediately.
 
 ## Architecture
 

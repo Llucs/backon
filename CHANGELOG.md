@@ -1,3 +1,8 @@
+## 3.7.2 - 2026-07-05
+
+- Fix `_check_hot_loop` thread-safety — properly guarded with `threading.Lock`
+- Fix line length violation in `_common.py` (89 → 88)
+
 ## 3.7.1 - 2026-07-05
 
 - Fix `assert_retried()` — now properly drives retries through `_retry_sync_inner` instead of direct call

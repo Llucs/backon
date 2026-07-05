@@ -1,4 +1,4 @@
-<img src="assets/square_logo.svg" width="200" />
+<img src="assets/square_logo.svg" width="170" />
 
 # backon
 

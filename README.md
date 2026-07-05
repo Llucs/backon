@@ -1,3 +1,5 @@
+<img src="assets/square_logo.svg" width="200" />
+
 # backon
 
 > Function decoration for backoff and retry — modern, fast, zero dependencies.

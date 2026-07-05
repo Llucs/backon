@@ -113,11 +113,19 @@ def _retry_loop_sync(
                 _call_hdlrs(after, state.to_details())
 
                 outcome_data = _decide_outcome(
-                    state, call_state, wait, condition, stop, jitter, max_time,
-                    exc, None,
+                    state,
+                    call_state,
+                    wait,
+                    condition,
+                    stop,
+                    jitter,
+                    max_time,
+                    exc,
+                    None,
                 )
-                (action, seconds, details,
-                 use_retry_cb, suppress_context) = outcome_data
+                (action, seconds, details, use_retry_cb, suppress_context) = (
+                    outcome_data
+                )
             else:
                 outcome.value = ret
                 outcome.exception = None
@@ -127,11 +135,19 @@ def _retry_loop_sync(
                 _call_hdlrs(after, state.to_details())
 
                 outcome_data = _decide_outcome(
-                    state, call_state, wait, condition, stop, jitter, max_time,
-                    None, ret,
+                    state,
+                    call_state,
+                    wait,
+                    condition,
+                    stop,
+                    jitter,
+                    max_time,
+                    None,
+                    ret,
                 )
-                (action, seconds, details,
-                 use_retry_cb, suppress_context) = outcome_data
+                (action, seconds, details, use_retry_cb, suppress_context) = (
+                    outcome_data
+                )
 
             if action == _RetryAction.SUCCESS:
                 _call_hdlrs(on_success, details)
@@ -243,11 +259,19 @@ async def _retry_loop_async(
                 await _call_hdlrs_async(after, state.to_details())
 
                 outcome_data = _decide_outcome(
-                    state, call_state, wait, condition, stop, jitter, max_time,
-                    exc, None,
+                    state,
+                    call_state,
+                    wait,
+                    condition,
+                    stop,
+                    jitter,
+                    max_time,
+                    exc,
+                    None,
                 )
-                (action, seconds, details,
-                 use_retry_cb, suppress_context) = outcome_data
+                (action, seconds, details, use_retry_cb, suppress_context) = (
+                    outcome_data
+                )
             else:
                 outcome.value = ret
                 outcome.exception = None
@@ -257,11 +281,19 @@ async def _retry_loop_async(
                 await _call_hdlrs_async(after, state.to_details())
 
                 outcome_data = _decide_outcome(
-                    state, call_state, wait, condition, stop, jitter, max_time,
-                    None, ret,
+                    state,
+                    call_state,
+                    wait,
+                    condition,
+                    stop,
+                    jitter,
+                    max_time,
+                    None,
+                    ret,
                 )
-                (action, seconds, details,
-                 use_retry_cb, suppress_context) = outcome_data
+                (action, seconds, details, use_retry_cb, suppress_context) = (
+                    outcome_data
+                )
 
             if action == _RetryAction.SUCCESS:
                 await _call_hdlrs_async(on_success, details)

@@ -29,8 +29,15 @@ async def _call_hdlrs_async(handlers, details):
 
 
 def _decide_outcome(
-    state, call_state, wait, condition, stop, jitter, max_time,
-    exc, ret,
+    state,
+    call_state,
+    wait,
+    condition,
+    stop,
+    jitter,
+    max_time,
+    exc,
+    ret,
 ):
     details = state.to_details()
 

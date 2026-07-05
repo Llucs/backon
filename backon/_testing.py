@@ -93,9 +93,12 @@ def assert_retried(fn: Callable[[], Any], expected_tries: int) -> None:
     from backon._wait_gen import wait_none
 
     _retry_sync_inner(
-        wrapper, wait_none,
-        jitter=None, raise_on_giveup=False,
-        sleep=lambda s: None, max_tries=expected_tries,
+        wrapper,
+        wait_none,
+        jitter=None,
+        raise_on_giveup=False,
+        sleep=lambda s: None,
+        max_tries=expected_tries,
     )
 
     if call_count != expected_tries:

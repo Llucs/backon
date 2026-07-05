@@ -28,11 +28,7 @@ jobs:
         run: |
           pdm run pytest --cov=backon --cov-report=xml --cov-report=term-missing
 
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          name: coverage-xml
-          path: coverage.xml
-
-      - name: Upload to Codecov
-        uses: codecov/codecov-action@v4
+          token: ${{ secrets.CODECOV_TOKEN }}

@@ -1,6 +1,7 @@
 name: Stale
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "30 1 * * 1"
 

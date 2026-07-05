@@ -1,3 +1,7 @@
+## 3.7.3 - 2026-07-05
+
+- Fix ruff formatting in `_decide.py`, `_loops.py`, `_testing.py`
+
 ## 3.7.2 - 2026-07-05
 
 - Fix `_check_hot_loop` thread-safety — properly guarded with `threading.Lock`

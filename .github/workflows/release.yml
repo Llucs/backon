@@ -1,9 +1,8 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -40,16 +39,16 @@ jobs:
           name: Packages
           path: dist
       - name: Publish to PyPI
-        continue-on-error: true
         env:
           TWINE_USERNAME: __token__
         run: |
-          pip install twine requests
-          TWINE_PASSWORD=$(python3 -c "
+          pip install requests twine
+          OIDC_TOKEN=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=pypi" | jq -r '.value')
+          PYPI_TOKEN=$(python3 -c "
 import json, os, sys
-import id, requests
-aud = requests.get('https://pypi.org/_/oidc/audience', timeout=5).json()['audience']
-oidc = id.detect_credential(audience=aud)
-mint = requests.post('https://pypi.org/_/oidc/mint-token', json={'token': oidc}, timeout=5)
-sys.stdout.write(mint.json()['token'])
-") twine upload dist/*
+import requests
+resp = requests.post('https://pypi.org/_/oidc/mint-token', json={'token': sys.argv[1]}, timeout=30)
+sys.stdout.write(resp.json()['token'])
+" "$OIDC_TOKEN")
+          TWINE_PASSWORD="$PYPI_TOKEN" twine upload dist/*

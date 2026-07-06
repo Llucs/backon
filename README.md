@@ -60,6 +60,7 @@ backon is a modern evolution of [backoff](https://github.com/litl/backoff) — a
 - [Jitter](#jitter)
 - [Handlers](#handlers)
 - [Global Toggle](#global-toggle)
+- [Generator Support](#generator-support)
 - [Async Support](#async-support)
 - [Custom Sleep](#custom-sleep)
 - [Advanced Features](#advanced-features)
@@ -85,15 +86,18 @@ backon is a modern evolution of [backoff](https://github.com/litl/backoff) — a
 - **Zero dependencies** — pure Python, stdlib only
 - **Four APIs** — decorator (`@on_exception`, `@on_predicate`), functional (`retry()`), context manager (`Retrying`), callable (`RetryingCaller` / `AsyncRetryingCaller`)
 - **Async native** — same API works for `async def` functions
+- **Generator native** — sync and async generators are retried transparently
 - **Full type hints** — validated with mypy, py.typed included
 - **Global toggle** — `backon.disable()` / `backon.enable()` for testing
 - **Custom sleep** — inject your own sleep function (useful for testing with `asyncio.Event`)
 - **Multiple wait strategies** — exponential, constant, Fibonacci, decay, runtime, randomized, incremental, and composable chains
+- **`wait_combine()`** — sum multiple wait strategies per retry step
+- **`retry_with()`** — override retry parameters per-call on decorated functions
 - **Jitter** — full jitter, random jitter, or none
 - **Rich callbacks** — `on_attempt`, `on_backoff`, `on_success`, `on_giveup`, `before_sleep`, `before`, `after`
 - **Circuit breaker** — CLOSED/OPEN/HALF_OPEN states with automatic recovery
 - **Hedging** — concurrent retry requests, first-success-wins
-- **Prometheus / OpenTelemetry metrics** — optional, zero hard dependencies
+- **Prometheus / OpenTelemetry / structlog metrics** — optional, zero hard dependencies
 - **Testing module** — `disable_retries()`, `limit_retries()`, `remove_backoff()`, `assert_retried()`
 - **Trio support** — retry with the trio async framework
 - **Operator overloading** — compose stops with `|` / `&`, wait generators with `+`
@@ -214,6 +218,27 @@ Accepts all parameters from `on_exception` except `exception` and `giveup`. Adds
 |---|---|---|---|
 | `predicate` | `Callable[[Any], bool]` | `operator.not_` | Retry when this returns `True` for the return value |
 
+#### `decorator.retry_with(**overrides)`
+
+Every decorated function (sync, async, generator) exposes a `.retry_with()` method that returns a new decorated function with overridden parameters:
+
+```python
+@backon.on_exception(backon.expo, ValueError, max_tries=5)
+def fetch():
+    ...
+
+# Override max_tries
+wrapped = fetch.retry_with(max_tries=3)
+
+# Override jitter
+wrapped = fetch.retry_with(jitter=None)
+
+# Override wait generator and sleep
+wrapped = fetch.retry_with(wait_gen=backon.constant, interval=0.1, sleep=lambda s: None)
+```
+
+The original decorated function is unaffected.
+
 ### Functional API
 
 #### `backon.retry(target, wait_gen, ...)`
@@ -305,16 +330,27 @@ All wait generators are callables that produce a sequence of wait times. Pass ex
 | `wait_random_exponential` | `(multiplier=1, max_value=None, exp_base=2, min_value=0)` | Randomized exponential (uniform random between 0 and the exponential value) |
 | `wait_incrementing` | `(start=1, increment=1, max_value=None)` | Linear increment: `start + n * increment` |
 | `wait_chain` | `(*generators)` | Sequentially play through multiple generators |
+| `wait_combine` | `(*generators)` | Sum all generator wait values per step (unlike `+` which chains sequentially) |
 | `wait_exception` | `(value=Callable)` | Dynamic wait based on the caught exception |
 | `wait_random` | `(min=0, max=1)` | Uniform random wait between min and max |
 | `wait_exponential_jitter` | `(initial=1, max=60, exp_base=2, jitter=1)` | Exponential backoff with added random jitter |
 | `wait_none` | `()` | Always returns 0 (no wait) |
 
-**Composition:** Combine wait generators with `+`:
+**Composition:** Combine wait generators with `+` (sequential chain) or `wait_combine` (sum per step):
 
 ```python
+# Sequential: wait_chain(expo, constant)
 wait_strategy = backon.expo(base=3) + backon.constant(interval=0.5)
+
+# Sum per step: wait_combine(expo, constant) — same kwargs to all sub-generators
+from backon import wait_combine
+
+@backon.on_exception(wait_combine(backon.expo, backon.constant), ValueError, max_tries=3)
+def fetch():
+    ...
 ```
+
+`wait_combine` calls all sub-generators with the same kwargs on each step and returns the sum — useful when you want combined behaviors on every retry rather than a sequence.
 
 ---
 
@@ -435,6 +471,37 @@ Per-instance toggle via `Retrying.enabled`:
 r = backon.Retrying(backon.expo, exception=ValueError, max_tries=3)
 r.enabled = False
 result = r.call(fn)  # no retry
+```
+
+---
+
+## Generator Support
+
+Sync and async generator functions are retried transparently. On each retry, the generator is restarted from scratch.
+
+```python
+@backon.on_exception(backon.expo, ValueError, max_tries=3)
+def gen():
+    yield 1
+    yield 2
+    raise ValueError("fail")
+    yield 3  # reached on retry
+
+result = list(gen())  # [1, 2, 3]
+
+@backon.on_exception(backon.expo, ValueError, max_tries=3)
+async def agen():
+    yield 1
+    raise ValueError("fail")
+    yield 2
+
+result = [item async for item in agen()]  # [1, 2]
+```
+
+`retry_with()` works on generators too:
+
+```python
+wrapped = gen.retry_with(max_tries=5)
 ```
 
 ---
@@ -573,16 +640,26 @@ with HedgingRetrying(backon.expo, max_hedge=3) as h:
 
 ### Metrics
 
-Optional Prometheus and OpenTelemetry metrics. Requires `prometheus_client` or `opentelemetry-api` to be installed.
+Optional Prometheus, OpenTelemetry, and structlog metrics. Each requires its corresponding package to be installed.
 
 ```python
-from backon._instrumentation import PrometheusMetrics, OTelMetrics, set_metrics_collector
+from backon._instrumentation import PrometheusMetrics, OTelMetrics, StructlogMetrics, set_metrics_collector
 
 # Prometheus
 set_metrics_collector(PrometheusMetrics())
 
 # OpenTelemetry
 set_metrics_collector(OTelMetrics(meter_name="myapp.backon"))
+
+# Structlog (structured logging)
+set_metrics_collector(StructlogMetrics())
+```
+
+Auto-detection (first available: prometheus_client > structlog > no-op):
+
+```python
+from backon._instrumentation import _auto_detect_collector
+set_metrics_collector(_auto_detect_collector())
 ```
 
 Metrics collected:

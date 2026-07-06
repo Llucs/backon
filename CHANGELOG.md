@@ -1,3 +1,11 @@
+## 3.8.0 - 2026-07-06
+
+- Add `wait_combine()` — sum multiple wait strategies at each step (unlike `+` which chains sequentially)
+- Add `retry_with()` on decorated functions — create modified copies at the call site (e.g. `fn.retry_with(max_tries=2)`)
+- Add generator retry support — sync generators and async generators are now automatically retried, restarting from scratch on each attempt
+- Add `StructlogMetrics` — structured logging via structlog, auto-detected when `structlog` is installed
+- Add auto-detection of instrumentation — `prometheus_client` and `structlog` are detected automatically, no manual `set_metrics_collector()` needed for basic setups
+
 ## 3.7.3 - 2026-07-05
 
 - Fix ruff formatting in `_decide.py`, `_loops.py`, `_testing.py`

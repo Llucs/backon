@@ -223,7 +223,90 @@ class OTelMetrics(MetricsCollector):
         self._hedge_requests.add(hedge_count, attributes=attrs)
 
 
-_metrics_collector: MetricsCollector = MetricsCollector()
+try:
+    import structlog
+except ImportError:
+    structlog = None
+
+
+class StructlogMetrics(MetricsCollector):
+    def __init__(self) -> None:
+        if structlog is None:
+            self._enabled = False
+            return
+        self._enabled = True
+        self._logger = structlog.get_logger("backon")
+
+    def emit_attempt(
+        self,
+        tries: int,
+        elapsed: float,
+        target_name: str,
+        exception_type: str | None = None,
+    ) -> None:
+        if not self._enabled:
+            return
+        self._logger.info(
+            "retry.attempt",
+            tries=tries,
+            elapsed=elapsed,
+            target=target_name,
+            exception_type=exception_type,
+        )
+
+    def emit_success(self, tries: int, elapsed: float, target_name: str) -> None:
+        if not self._enabled:
+            return
+        self._logger.info(
+            "retry.success", tries=tries, elapsed=elapsed, target=target_name
+        )
+
+    def emit_failure(
+        self, tries: int, elapsed: float, target_name: str, exception_type: str
+    ) -> None:
+        if not self._enabled:
+            return
+        self._logger.warning(
+            "retry.failure",
+            tries=tries,
+            elapsed=elapsed,
+            target=target_name,
+            exception_type=exception_type,
+        )
+
+    def emit_circuit_breaker_open(self, breaker_name: str) -> None:
+        if not self._enabled:
+            return
+        self._logger.warning("circuit_breaker.open", breaker=breaker_name)
+
+    def emit_circuit_breaker_close(self, breaker_name: str) -> None:
+        if not self._enabled:
+            return
+        self._logger.info("circuit_breaker.close", breaker=breaker_name)
+
+    def emit_hedge_request(self, target_name: str, hedge_count: int) -> None:
+        if not self._enabled:
+            return
+        self._logger.info("hedge.request", target=target_name, count=hedge_count)
+
+
+def _auto_detect_collector() -> MetricsCollector:
+    try:
+        import prometheus_client  # noqa: F401
+
+        return PrometheusMetrics()
+    except ImportError:
+        pass
+    try:
+        import structlog  # noqa: F401
+
+        return StructlogMetrics()
+    except ImportError:
+        pass
+    return MetricsCollector()
+
+
+_metrics_collector: MetricsCollector = _auto_detect_collector()
 
 
 def set_metrics_collector(collector: MetricsCollector) -> None:

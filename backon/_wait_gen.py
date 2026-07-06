@@ -174,6 +174,21 @@ def _wait_chain(
 wait_chain = _Wait(_wait_chain)
 
 
+def wait_combine(*waits: _Wait) -> _Wait:
+    def _wait_combine(**kwargs: Any) -> Generator[float, Any, None]:
+        gens = [w(**kwargs) for w in waits]
+        for g in gens:
+            next(g)
+        value = yield 0.0
+        while True:
+            total = 0.0
+            for g in gens:
+                total += g.send(value)
+            value = yield total
+
+    return _Wait(_wait_combine)
+
+
 def _wait_exception(
     value: Callable[[Any], float],
 ) -> Generator[float, None, None]:

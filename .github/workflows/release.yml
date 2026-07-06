@@ -78,5 +78,18 @@ jobs:
         env:
           TWINE_USERNAME: __token__
         run: |
-          pip install twine
-          TWINE_PASSWORD=$(python -m id exchange backon) twine upload dist/*
+          pip install twine requests
+          TWINE_PASSWORD=$(python3 -c "
+import json, os, sys
+import id, requests
+
+# Step 1: discover OIDC audience from PyPI
+aud = requests.get('https://pypi.org/_/oidc/audience', timeout=5).json()['audience']
+
+# Step 2: get OIDC token from GitHub Actions
+oidc = id.detect_credential(audience=aud)
+
+# Step 3: exchange for a PyPI API token
+mint = requests.post('https://pypi.org/_/oidc/mint-token', json={'token': oidc}, timeout=5)
+sys.stdout.write(mint.json()['token'])
+") twine upload dist/*

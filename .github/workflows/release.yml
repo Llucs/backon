@@ -1,21 +1,55 @@
-publish:
-  name: Publish to PyPI
-  runs-on: ubuntu-latest
-  needs: build
+name: Release
 
-  permissions:
-    id-token: write
+on:
+  push:
+    tags:
+      - "v*"
 
-  environment:
-    name: pypi
-    url: https://pypi.org/p/backon
+permissions:
+  contents: read
 
-  steps:
-    - name: Download distributions
-      uses: actions/download-artifact@v4
-      with:
-        name: python-package-distributions
-        path: dist
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v5.5.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install pdm
+      - run: pdm build
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Packages
+          path: dist/*
 
-    - name: Publish package distributions to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+  publish:
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      attestations: write
+      contents: write
+    steps:
+      - uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+        with:
+          name: Packages
+          path: dist
+      - name: Publish to PyPI
+        continue-on-error: true
+        env:
+          TWINE_USERNAME: __token__
+        run: |
+          pip install twine requests
+          TWINE_PASSWORD=$(python3 -c "
+import json, os, sys
+import id, requests
+aud = requests.get('https://pypi.org/_/oidc/audience', timeout=5).json()['audience']
+oidc = id.detect_credential(audience=aud)
+mint = requests.post('https://pypi.org/_/oidc/mint-token', json={'token': oidc}, timeout=5)
+sys.stdout.write(mint.json()['token'])
+") twine upload dist/*

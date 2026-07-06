@@ -73,4 +73,32 @@ jobs:
         with:
           subject-path: "dist/*"
 
-      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+        run: |
+          pip install twine
+          python << 'PYEOF'
+import os, urllib.request, json
+
+token = os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"]
+url = os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"]
+
+req = urllib.request.Request(
+    f"{url}&audience=pypi",
+    headers={"Authorization": f"Bearer {token}"},
+)
+with urllib.request.urlopen(req) as resp:
+    jwt = json.loads(resp.read())["value"]
+
+req2 = urllib.request.Request(
+    "https://pypi.org/_oidc/mint-token",
+    data=json.dumps({"token": jwt}).encode(),
+    headers={"Content-Type": "application/json"},
+)
+with urllib.request.urlopen(req2) as resp:
+    os.environ["TWINE_PASSWORD"] = json.loads(resp.read())["token"]
+
+import subprocess
+subprocess.check_call(["python", "-m", "twine", "upload", "dist/*"])
+PYEOF

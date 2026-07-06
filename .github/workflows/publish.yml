@@ -3,6 +3,10 @@ name: Release v3
 on:
   push:
   workflow_dispatch:
+    inputs:
+      reason:
+        description: Manual publish trigger
+        required: false
 
 permissions:
   contents: read
@@ -55,7 +59,7 @@ jobs:
           path: dist/*
 
   publish:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     needs: [build]
     runs-on: ubuntu-latest
     environment: pypi

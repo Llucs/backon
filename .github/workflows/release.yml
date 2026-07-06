@@ -77,11 +77,24 @@ jobs:
         env:
           TWINE_USERNAME: __token__
         run: |
+          set -x
           pip install twine
-          OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=pypi" | \
-            python3 -c "import sys,json;print(json.load(sys.stdin)['value'])")
-          PYPI_TOKEN=$(curl -s -X POST https://pypi.org/_oidc/mint-token \
-            -d "{\"token\":\"$OIDC_TOKEN\"}" | \
-            python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+          echo "Getting OIDC token..."
+          curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=pypi" > /tmp/oidc_response.json
+          cat /tmp/oidc_response.json
+          OIDC_TOKEN=$(python3 -c "import sys,json;print(json.load(sys.stdin)['value'])" < /tmp/oidc_response.json)
+          if [ -z "$OIDC_TOKEN" ]; then
+            echo "Failed to get OIDC token"
+            exit 1
+          fi
+          echo "Exchanging OIDC token for PyPI token..."
+          curl -sS -X POST https://pypi.org/_oidc/mint-token \
+            -d "{\"token\":\"$OIDC_TOKEN\"}" > /tmp/pypi_response.json
+          cat /tmp/pypi_response.json
+          PYPI_TOKEN=$(python3 -c "import sys,json;print(json.load(sys.stdin)['token'])" < /tmp/pypi_response.json)
+          if [ -z "$PYPI_TOKEN" ]; then
+            echo "Failed to get PyPI token"
+            exit 1
+          fi
           TWINE_PASSWORD="$PYPI_TOKEN" twine upload dist/*

@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="./assets/circle_logo.svg" width="160" />
+  <img
+    src="https://raw.githubusercontent.com/Llucs/backon/main/assets/circle_logo.svg"
+    width="160"
+    alt="backon logo"
+  />
 </p>
 
 <h1 align="center">backon</h1>

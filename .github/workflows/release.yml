@@ -12,14 +12,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v5.5.0
         with:
           python-version: "3.12"
           cache: pip
+
       - run: pip install pdm
       - run: pdm build
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Packages
@@ -28,27 +32,18 @@ jobs:
   publish:
     needs: [build]
     runs-on: ubuntu-latest
-    environment: pypi
+    environment:
+      name: pypi
+      url: https://pypi.org/p/backon
+
     permissions:
       id-token: write
-      attestations: write
-      contents: write
+
     steps:
       - uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
         with:
           name: Packages
           path: dist
+
       - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-        run: |
-          pip install requests twine
-          OIDC_TOKEN=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=pypi" | jq -r '.value')
-          PYPI_TOKEN=$(python3 -c "
-import json, os, sys
-import requests
-resp = requests.post('https://pypi.org/_/oidc/mint-token', json={'token': sys.argv[1]}, timeout=30)
-sys.stdout.write(resp.json()['token'])
-" "$OIDC_TOKEN")
-          TWINE_PASSWORD="$PYPI_TOKEN" twine upload dist/*
+        uses: pypa/gh-action-pypi-publish@release/v1

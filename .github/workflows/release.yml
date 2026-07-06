@@ -5,6 +5,10 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      dummy:
+        description: trigger workflow_cache refresh
+        required: false
 
 permissions:
   contents: read

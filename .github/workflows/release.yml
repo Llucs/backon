@@ -1,14 +1,6 @@
 name: Release
 
-on:
-  push:
-    tags:
-      - "v*"
-  workflow_dispatch:
-    inputs:
-      dummy:
-        description: trigger workflow_cache refresh
-        required: false
+on: [push]
 
 permissions:
   contents: read
@@ -61,6 +53,7 @@ jobs:
           path: dist/*
 
   publish:
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [build]
     runs-on: ubuntu-latest
     environment: pypi

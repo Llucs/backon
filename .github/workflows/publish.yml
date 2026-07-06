@@ -1,8 +1,8 @@
 name: Release v3
 
 on:
-  repository_dispatch:
-    types: [publish]
+  push:
+  pull_request:
 
 permissions:
   contents: read

@@ -78,27 +78,10 @@ jobs:
           TWINE_USERNAME: __token__
         run: |
           pip install twine
-          python << 'PYEOF'
-import os, urllib.request, json
-
-token = os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"]
-url = os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"]
-
-req = urllib.request.Request(
-    f"{url}&audience=pypi",
-    headers={"Authorization": f"Bearer {token}"},
-)
-with urllib.request.urlopen(req) as resp:
-    jwt = json.loads(resp.read())["value"]
-
-req2 = urllib.request.Request(
-    "https://pypi.org/_oidc/mint-token",
-    data=json.dumps({"token": jwt}).encode(),
-    headers={"Content-Type": "application/json"},
-)
-with urllib.request.urlopen(req2) as resp:
-    os.environ["TWINE_PASSWORD"] = json.loads(resp.read())["token"]
-
-import subprocess
-subprocess.check_call(["python", "-m", "twine", "upload", "dist/*"])
-PYEOF
+          OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=pypi" | \
+            python3 -c "import sys,json;print(json.load(sys.stdin)['value'])")
+          PYPI_TOKEN=$(curl -s -X POST https://pypi.org/_oidc/mint-token \
+            -d "{\"token\":\"$OIDC_TOKEN\"}" | \
+            python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+          TWINE_PASSWORD="$PYPI_TOKEN" twine upload dist/*

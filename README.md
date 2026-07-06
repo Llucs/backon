@@ -40,7 +40,7 @@
 
 backon is a modern evolution of [backoff](https://github.com/litl/backoff) — a zero-dependency Python library for retry with exponential backoff. It provides decorator, functional, and context manager APIs for both sync and async code.
 
-![demo](assets/demo.gif)
+![backon demo](https://raw.githubusercontent.com/Llucs/backon/main/assets/demo.gif)
 
 ---
 

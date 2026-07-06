@@ -1,6 +1,8 @@
 name: Release
 
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
 
 permissions:
   contents: read

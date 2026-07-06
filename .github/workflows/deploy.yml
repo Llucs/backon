@@ -1,4 +1,4 @@
-name: Release v3
+name: Deploy
 
 on:
   push:
@@ -12,23 +12,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v5.5.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: "3.12"
           cache: pip
-
       - run: pip install pdm
-
       - run: pdm install -G lint -G test
-
       - run: pdm run pytest tests/ -q
-
       - run: pdm run ruff check backon/
-
       - run: pdm run mypy backon/
 
   build:
@@ -36,26 +29,21 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v5.5.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: "3.12"
           cache: pip
-
       - run: pip install pdm
-
       - run: pdm build
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: Packages
           path: dist/*
 
   publish:
-    if: github.event_name == 'repository_dispatch'
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [build]
     runs-on: ubuntu-latest
     environment: pypi
@@ -63,17 +51,11 @@ jobs:
       id-token: write
       attestations: write
       contents: write
-
     steps:
-      - uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+      - uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e
         with:
           name: Packages
           path: dist
-
-      - uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
-        with:
-          subject-path: "dist/*"
-
       - name: Publish to PyPI
         continue-on-error: true
         env:
@@ -83,14 +65,8 @@ jobs:
           TWINE_PASSWORD=$(python3 -c "
 import json, os, sys
 import id, requests
-
-# Step 1: discover OIDC audience from PyPI
 aud = requests.get('https://pypi.org/_/oidc/audience', timeout=5).json()['audience']
-
-# Step 2: get OIDC token from GitHub Actions
 oidc = id.detect_credential(audience=aud)
-
-# Step 3: exchange for a PyPI API token
 mint = requests.post('https://pypi.org/_/oidc/mint-token', json={'token': oidc}, timeout=5)
 sys.stdout.write(mint.json()['token'])
 ") twine upload dist/*

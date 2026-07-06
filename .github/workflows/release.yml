@@ -73,8 +73,17 @@ jobs:
         with:
           subject-path: "dist/*"
 
-      - name: Upload packages to release
+      - name: Publish to PyPI
+        continue-on-error: true
         env:
-          GH_TOKEN: ${{ github.token }}
+          TWINE_USERNAME: __token__
         run: |
-          gh release upload v3.8.0 dist/* --repo ${{ github.repository }}
+          pip install twine
+          OIDC_TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=pypi" | \
+            python3 -c "import sys,json;print(json.load(sys.stdin)['value'])")
+          PYPI_TOKEN=$(curl -sS -X POST https://pypi.org/_oidc/mint-token \
+            -H "Content-Type: application/json" \
+            -d "{\"token\":\"$OIDC_TOKEN\"}" | \
+            python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+          TWINE_PASSWORD="$PYPI_TOKEN" twine upload dist/*

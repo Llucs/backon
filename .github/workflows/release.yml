@@ -1,10 +1,6 @@
 name: Release
-run-name: Publish ${{ github.ref_name }} $(date +%s)
 
-on:
-  push:
-    branches: [main]
-    tags: ["v*"]
+on: [push, workflow_dispatch]
 
 permissions:
   contents: read

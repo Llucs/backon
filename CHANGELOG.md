@@ -1,3 +1,10 @@
+## 4.0.0 - 2026-07-07
+
+- Remove dead code (`_sync.py`, `_async.py`) — 507 lines of duplicate logic no longer imported anywhere; replaced with `DeprecationWarning` stubs
+- Make `_config_handlers` lazy — default log handlers are no longer created eagerly at decoration time; uses `_LazyLogHandler` to defer `functools.partial` creation until first backoff/giveup event
+- Replace `time.monotonic()` with `time.monotonic_ns()` in `_now()` and `_check_hot_loop()` for lower overhead time retrieval
+- Remove `_sync.py` and `_async.py` from coverage omit — they now count toward coverage
+
 ## 3.8.0 - 2026-07-06
 
 - Add `wait_combine()` — sum multiple wait strategies at each step (unlike `+` which chains sequentially)

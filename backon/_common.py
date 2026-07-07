@@ -77,27 +77,45 @@ def _prepare_logger(logger):
     return logger
 
 
+class _LazyLogHandler:
+    __slots__ = ("_handler", "_factory")
+
+    def __init__(self, handler, logger, log_level):
+        self._handler = None
+        self._factory = lambda: functools.partial(
+            handler, logger=logger, log_level=log_level
+        )
+
+    def __call__(self, details):
+        if self._handler is None:
+            self._handler = self._factory()
+        self._handler(details)
+
+
 def _config_handlers(
     user_handlers, *, default_handler=None, logger=None, log_level=None
 ):
     if isinstance(user_handlers, list) and logger is None:
         return user_handlers
     handlers = []
-    if logger is not None:
+    if logger is not None and user_handlers is None:
         assert log_level is not None
-        log_handler = functools.partial(
-            default_handler, logger=logger, log_level=log_level
+        handlers.append(_LazyLogHandler(default_handler, logger, log_level))
+    elif logger is not None:
+        assert log_level is not None
+        handlers.append(
+            functools.partial(default_handler, logger=logger, log_level=log_level)
         )
-        handlers.append(log_handler)
-
-    if user_handlers is None:
-        return handlers
-
-    if hasattr(user_handlers, "__iter__"):
-        handlers += list(user_handlers)
-    else:
-        handlers.append(user_handlers)
-
+        if user_handlers is not None:
+            if hasattr(user_handlers, "__iter__"):
+                handlers += list(user_handlers)
+            else:
+                handlers.append(user_handlers)
+    elif user_handlers is not None:
+        if hasattr(user_handlers, "__iter__"):
+            handlers += list(user_handlers)
+        else:
+            handlers.append(user_handlers)
     return handlers
 
 
@@ -124,7 +142,7 @@ def _log_giveup(details, logger, log_level):
 
 
 def _now():
-    return time_module.monotonic()
+    return time_module.monotonic_ns() / 1_000_000_000
 
 
 def _elapsed(start):
@@ -140,7 +158,7 @@ _hot_loop_lock = threading.Lock()
 
 
 def _check_hot_loop() -> None:
-    now = time_module.monotonic()
+    now = time_module.monotonic_ns() / 1_000_000_000
     with _hot_loop_lock:
         prev = _hot_loop_data["last_retry"]
         if prev > 0 and now - prev < 0.1:

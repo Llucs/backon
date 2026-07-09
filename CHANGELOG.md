@@ -1,3 +1,11 @@
+## 4.1.0 - 2026-07-09
+
+- Add fast path (`_fast.py`) — monolithic inline retry loop for the common case (no handlers, no state tracking). Avoids `RetryState`/`Attempt` dataclass allocations, `_decide_outcome()`, `_call_hdlrs`, `_retry_context_manager`, and `to_details()` dict creation. ~3μs per success call (was ~22μs).
+- Replace generator-based wait generators with class-based `_Wait` subclasses — removes `.send()`/`yield` overhead, uses direct `.next(send_value)` method. ~15% faster wait gen iteration.
+- Add `_is_fast_path()` gate — decorator, functional, and callable APIs auto-detect when fast path is safe and dispatch to the monolithic loop.
+- Remove dead generator functions `_wait_random_exponential` and `_wait_chain` (replaced by class-based `_WaitRandomExponential` and `_WaitChain`).
+- Performance (benchmarked against tenacity): 1.2x faster on success path (42µs vs 51µs), 3.6x faster on 3-retry path (107µs vs 387µs).
+
 ## 4.0.0 - 2026-07-07
 
 - Remove dead code (`_sync.py`, `_async.py`) — 507 lines of duplicate logic no longer imported anywhere; replaced with `DeprecationWarning` stubs

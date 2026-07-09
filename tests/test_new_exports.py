@@ -33,19 +33,18 @@ class TestNewExports:
 
     def test_wait_random(self):
         gen = wait_random(min=0.0, max=1.0)
-        val = next(gen)
+        val = gen.next()
         assert isinstance(val, float)
         assert 0.0 <= val <= 1.0
 
     def test_wait_none(self):
         gen = wait_none()
-        val = next(gen)
+        val = gen.next()
         assert val == 0.0
 
     def test_wait_exponential_jitter(self):
         gen = wait_exponential_jitter(initial=1.0, max=10.0)
-        next(gen)
-        val = next(gen)
+        val = gen.next()
         assert isinstance(val, float)
         assert val > 0.0
 

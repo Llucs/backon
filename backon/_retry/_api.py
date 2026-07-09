@@ -19,8 +19,8 @@ from backon._common import (
 from backon._conditions import RetryCondition, Stop
 from backon._jitter import full_jitter
 from backon._rate_limiter import RateLimiter
+from backon._retry._fast import _retry_fast_async_inner, _retry_fast_sync_inner
 from backon._retry._helpers import _make_default_condition, _make_default_stop
-from backon._retry._loops import _retry_loop_async, _retry_loop_sync
 from backon._typing import (
     _Handler,
     _Jitterer,
@@ -96,22 +96,22 @@ def _retry_sync(
 
     _sleep = sleep or time_module.sleep
 
-    return _retry_loop_sync(
+    return _retry_fast_sync_inner(
         target,
         wait_gen,
-        condition,
-        stop,
-        jitter,
-        on_success,
-        on_backoff,
-        on_giveup,
-        on_attempt,
-        before_sleep,
-        _sleep,
-        retry_error_callback,
-        raise_on_giveup,
-        max_time,
-        wait_gen_kwargs,
+        condition=condition,
+        stop=stop,
+        jitter=jitter,
+        on_success=on_success,
+        on_backoff=on_backoff,
+        on_giveup=on_giveup,
+        on_attempt=on_attempt,
+        before_sleep=before_sleep,
+        sleep=_sleep,
+        retry_error_callback=retry_error_callback,
+        raise_on_giveup=raise_on_giveup,
+        max_time=max_time,
+        wait_gen_kwargs=wait_gen_kwargs,
         before=before,
         after=after,
         _holder=_holder,
@@ -183,22 +183,22 @@ async def _retry_async(
 
     _sleep = sleep or asyncio.sleep
 
-    return await _retry_loop_async(
+    return await _retry_fast_async_inner(
         target,
         wait_gen,
-        condition,
-        stop,
-        jitter,
-        on_success,
-        on_backoff,
-        on_giveup,
-        on_attempt,
-        before_sleep,
-        _sleep,
-        retry_error_callback,
-        raise_on_giveup,
-        max_time,
-        wait_gen_kwargs,
+        condition=condition,
+        stop=stop,
+        jitter=jitter,
+        on_success=on_success,
+        on_backoff=on_backoff,
+        on_giveup=on_giveup,
+        on_attempt=on_attempt,
+        before_sleep=before_sleep,
+        sleep=_sleep,
+        retry_error_callback=retry_error_callback,
+        raise_on_giveup=raise_on_giveup,
+        max_time=max_time,
+        wait_gen_kwargs=wait_gen_kwargs,
         before=before,
         after=after,
         _holder=_holder,

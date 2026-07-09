@@ -414,23 +414,17 @@ class TestNewRetryConditions:
 
 
 class TestNewWaitGenerators:
-    def test_wait_random_yields_zero_first(self):
-        g = wait_random(min=1, max=2)
-        assert next(g) == 0.0
-
     def test_wait_random_values_in_range(self):
         random.seed(42)
         g = wait_random(min=1, max=2)
-        next(g)
         for _ in range(50):
-            v = next(g)
+            v = g.next()
             assert 1 <= v <= 2
 
     def test_wait_random_min_equals_max(self):
         g = wait_random(min=5, max=5)
-        next(g)
         for _ in range(10):
-            assert next(g) == 5.0
+            assert g.next() == 5.0
 
     def test_wait_random_with_retry(self):
         calls = []
@@ -453,32 +447,25 @@ class TestNewWaitGenerators:
         assert result == "ok"
         assert len(calls) == 3
 
-    def test_wait_exponential_jitter_yields_zero_first(self):
-        g = wait_exponential_jitter(initial=1, max=60, exp_base=2, jitter=0)
-        assert next(g) == 0.0
-
     def test_wait_exponential_jitter_values(self):
         g = wait_exponential_jitter(initial=1, max=60, exp_base=2, jitter=0)
-        next(g)
-        assert next(g) == 2.0
-        assert next(g) == 4.0
-        assert next(g) == 8.0
-        assert next(g) == 16.0
+        assert g.next() == 2.0
+        assert g.next() == 4.0
+        assert g.next() == 8.0
+        assert g.next() == 16.0
 
     def test_wait_exponential_jitter_capped_at_max(self):
         g = wait_exponential_jitter(initial=1, max=5, exp_base=2, jitter=0)
-        next(g)
-        assert next(g) == 2.0
-        assert next(g) == 4.0
-        assert next(g) == 5.0
-        assert next(g) == 5.0
+        assert g.next() == 2.0
+        assert g.next() == 4.0
+        assert g.next() == 5.0
+        assert g.next() == 5.0
 
     def test_wait_exponential_jitter_with_jitter(self):
         random.seed(42)
         g = wait_exponential_jitter(initial=1, max=60, exp_base=2, jitter=1)
-        next(g)
         for _ in range(10):
-            v = next(g)
+            v = g.next()
             assert v >= 2.0
 
     def test_wait_exponential_jitter_with_retry(self):
@@ -503,15 +490,10 @@ class TestNewWaitGenerators:
         assert result == "ok"
         assert len(calls) == 3
 
-    def test_wait_none_yields_zero_first(self):
-        g = wait_none()
-        assert next(g) == 0.0
-
     def test_wait_none_always_zero(self):
         g = wait_none()
-        next(g)
         for _ in range(10):
-            assert next(g) == 0.0
+            assert g.next() == 0.0
 
     def test_wait_none_with_retry(self):
         calls = []
@@ -527,11 +509,10 @@ class TestNewWaitGenerators:
             wait_none,
             exception=ValueError,
             max_tries=5,
-            jitter=None,
+
         )
         assert result == "ok"
         assert len(calls) == 3
-
 
 class TestWaitAddition:
     def test_wait_add_returns_combined(self):
@@ -544,17 +525,15 @@ class TestWaitAddition:
     def test_combined_wait_sums_values(self):
         combined = constant + constant
         g = combined(interval=0.05)
-        next(g)
-        result = g.send(None)
+        result = g.next()
         assert result == pytest.approx(0.1)
 
     def test_combined_wait_multiple_values(self):
         combined = constant + constant
         g = combined(interval=0.05)
-        next(g)
-        assert g.send(None) == pytest.approx(0.1)
-        assert g.send(None) == pytest.approx(0.1)
-        assert g.send(None) == pytest.approx(0.1)
+        assert g.next() == pytest.approx(0.1)
+        assert g.next() == pytest.approx(0.1)
+        assert g.next() == pytest.approx(0.1)
 
     def test_wait_addition_chaining(self):
         combined = expo + constant + fibo
@@ -567,8 +546,7 @@ class TestWaitAddition:
     def test_wait_addition_chaining_values(self):
         combined = expo + constant + fibo
         g = combined()
-        next(g)
-        result = g.send(None)
+        result = g.next()
         assert result == pytest.approx(3.0)
 
     def test_combined_wait_add_chain(self):

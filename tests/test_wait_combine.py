@@ -6,28 +6,24 @@ class TestWaitCombine:
     def test_combine_two(self):
         w = wait_combine(backon.constant, backon.constant)
         g = w(interval=1)
-        next(g)
-        assert g.send(None) == 2
-        assert g.send(None) == 2
+        assert g.next() == 2
+        assert g.next() == 2
 
     def test_combine_three(self):
         w = wait_combine(backon.constant, backon.constant, backon.constant)
         g = w(interval=1)
-        next(g)
-        assert g.send(None) == 3
+        assert g.next() == 3
 
     def test_combine_with_expo(self):
         w = wait_combine(backon.expo, backon.expo)
         g = w(base=2)
-        next(g)
-        assert g.send(None) == 2
-        assert g.send(None) == 4
+        assert g.next() == 2
+        assert g.next() == 4
 
     def test_combine_single(self):
         w = wait_combine(backon.constant)
         g = w(interval=5)
-        next(g)
-        assert g.send(None) == 5
+        assert g.next() == 5
 
     def test_combine_with_decorator(self):
         calls = []
@@ -67,3 +63,4 @@ class TestWaitCombine:
         )
         assert result == "ok"
         assert len(calls) == 2
+

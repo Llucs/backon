@@ -44,13 +44,11 @@ def _maybe_call(f, *args, **kwargs):
 
 def _init_wait_gen(wait_gen, wait_gen_kwargs):
     kwargs = {k: _maybe_call(v) for k, v in wait_gen_kwargs.items()}
-    initialized = wait_gen(**kwargs)
-    initialized.send(None)
-    return initialized
+    return wait_gen(**kwargs)
 
 
 def _next_wait(wait, send_value, jitter, elapsed, max_time):
-    value = wait.send(send_value)
+    value = wait.next(send_value)
     if jitter is not None:
         seconds = jitter(value)
     else:

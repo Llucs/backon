@@ -3,18 +3,21 @@ from __future__ import annotations
 import itertools
 import math
 import random
-from collections.abc import Callable, Generator, Iterable, Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 
 
 class _Wait:
-    def __init__(self, gen_func: Callable[..., Generator[float, Any, None]]) -> None:
-        self._gen_func = gen_func
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        pass
 
-    def __call__(self, **kwargs: Any) -> Generator[float, Any, None]:
-        return self._gen_func(**kwargs)
+    def next(self, send_value=None) -> float:
+        raise NotImplementedError
 
-    def __add__(self, other: _Wait | _CombinedWait) -> _CombinedWait:
+    def __call__(self, **kwargs: Any) -> _Wait:
+        return self.__class__(**kwargs)
+
+    def __add__(self, other: _Wait) -> _CombinedWait:
         if isinstance(other, _CombinedWait):
             return _CombinedWait(self, *other._waits)
         return _CombinedWait(self, other)
@@ -23,214 +26,223 @@ class _Wait:
         return _CombinedWait(other, self)
 
 
-class _CombinedWait:
+class _CombinedWait(_Wait):
     def __init__(self, *waits: _Wait) -> None:
-        self._waits = waits
+        self._waits = tuple(waits)
 
-    def __call__(self, **kwargs: Any) -> Generator[float, Any, None]:
-        gens = [w(**kwargs) for w in self._waits]
-        for g in gens:
-            next(g)
-        value = yield 0.0
-        while True:
-            total = 0.0
-            for g in gens:
-                total += g.send(value)
-            value = yield total
+    def next(self, send_value=None) -> float:
+        return sum(w.next(send_value) for w in self._waits)
 
-    def __add__(self, other: _Wait | _CombinedWait) -> _CombinedWait:
+    def __call__(self, **kwargs: Any) -> _CombinedWait:
+        return _CombinedWait(*(w(**kwargs) for w in self._waits))
+
+    def __add__(self, other: _Wait) -> _CombinedWait:
         if isinstance(other, _CombinedWait):
             return _CombinedWait(*self._waits, *other._waits)
         return _CombinedWait(*self._waits, other)
 
 
-def _expo(
-    base: float = 2, factor: float = 1, max_value: float | None = None
-) -> Generator[float, Any, None]:
-    yield 0.0
-    n = 0
-    while True:
-        a = factor * base**n
-        if max_value is None or a < max_value:
-            yield a
-            n += 1
+class _Expo(_Wait):
+    def __init__(
+        self, base: float = 2, factor: float = 1,
+        max_value: float | None = None,
+    ) -> None:
+        self._base = base
+        self._factor = factor
+        self._max_value = max_value
+        self._n = 0
+
+    def next(self, send_value=None) -> float:
+        a = self._factor * self._base ** self._n
+        if self._max_value is None or a < self._max_value:
+            self._n += 1
+            return a
+        return self._max_value
+
+
+expo = _Expo()
+
+
+class _Decay(_Wait):
+    def __init__(
+        self, initial_value: float = 1, decay_factor: float = 1,
+        min_value: float | None = None,
+    ) -> None:
+        self._initial_value = initial_value
+        self._decay_factor = decay_factor
+        self._min_value = min_value
+        self._t = 0
+
+    def next(self, send_value=None) -> float:
+        a = self._initial_value * math.e ** (-self._t * self._decay_factor)
+        if self._min_value is None or a > self._min_value:
+            self._t += 1
+            return a
+        return self._min_value
+
+
+decay = _Decay()
+
+
+class _Fibo(_Wait):
+    def __init__(self, max_value: int | None = None) -> None:
+        self._max_value = max_value
+        self._a = 1
+        self._b = 1
+
+    def next(self, send_value=None) -> float:
+        if self._max_value is None or self._a < self._max_value:
+            result = self._a
+            self._a, self._b = self._b, self._a + self._b
+            return float(result)
+        return float(self._max_value)
+
+
+fibo = _Fibo()
+
+
+class _Constant(_Wait):
+    def __init__(self, interval: int | float | Sequence[float] = 1) -> None:
+        if isinstance(interval, (int, float)):
+            self._itr = itertools.repeat(float(interval))
         else:
-            yield max_value
+            self._itr = iter(interval)
+
+    def next(self, send_value=None) -> float:
+        return next(self._itr)
 
 
-expo = _Wait(_expo)
+constant = _Constant()
 
 
-def _decay(
-    initial_value: float = 1, decay_factor: float = 1, min_value: float | None = None
-) -> Generator[float, Any, None]:
-    yield 0.0
-    t = 0
-    while True:
-        a = initial_value * math.e ** (-t * decay_factor)
-        if min_value is None or a > min_value:
-            yield a
-            t += 1
-        else:
-            yield min_value
+class _Runtime(_Wait):
+    def __init__(self, *, value: Callable[[Any], float]) -> None:
+        self._value = value
+
+    def next(self, send_value=None) -> float:
+        return self._value(send_value)
 
 
-decay = _Wait(_decay)
+runtime = _Runtime(value=lambda x: x)
 
 
-def _fibo(max_value: int | None = None) -> Generator[int, None, None]:
-    yield 0
-    a = 1
-    b = 1
-    while True:
-        if max_value is None or a < max_value:
-            yield a
-            a, b = b, a + b
-        else:
-            yield max_value
+class _WaitRandomExponential(_Wait):
+    def __init__(
+        self, multiplier: float = 1,
+        max_value: float | None = None, exp_base: float = 2,
+        min_value: float = 0,
+    ) -> None:
+        self._multiplier = multiplier
+        self._max_value = max_value
+        self._exp_base = exp_base
+        self._min_value = min_value
+        self._n = 0
+
+    def next(self, send_value=None) -> float:
+        a = self._multiplier * self._exp_base ** self._n
+        if self._max_value is not None and a > self._max_value:
+            a = self._max_value
+        if a < self._min_value:
+            a = self._min_value
+        self._n += 1
+        return random.uniform(0, a)
 
 
-fibo = _Wait(_fibo)
+wait_random_exponential = _WaitRandomExponential()
 
 
-def _constant(
-    interval: int | float | Sequence[float] = 1,
-) -> Generator[float, None, None]:
-    yield 0.0
-    if isinstance(interval, (int, float)):
-        itr: Iterable[float] = itertools.repeat(float(interval))
-    else:
-        itr = iter(interval)
-    for val in itr:  # noqa: UP028
-        yield val
+class _WaitIncrementing(_Wait):
+    def __init__(
+        self, start: float = 1, increment: float = 1,
+        max_value: float | None = None,
+    ) -> None:
+        self._start = start
+        self._increment = increment
+        self._max_value = max_value
+        self._n = 0
+
+    def next(self, send_value=None) -> float:
+        a = self._start + self._n * self._increment
+        self._n += 1
+        if self._max_value is not None and a > self._max_value:
+            return self._max_value
+        return a
 
 
-constant = _Wait(_constant)
+wait_incrementing = _WaitIncrementing()
 
 
-def _runtime(*, value: Callable[[Any], float]) -> Generator[float, None, None]:
-    ret_or_exc = yield 0.0
-    while True:
-        ret_or_exc = yield value(ret_or_exc)
+class _WaitChain(_Wait):
+    def __init__(self, *waits: _Wait) -> None:
+        self._waits = list(waits)
+        self._idx = 0
+
+    def __call__(self, **kwargs: Any) -> _WaitChain:
+        return _WaitChain(*(w(**kwargs) for w in self._waits))
+
+    def next(self, send_value=None) -> float:
+        if not self._waits:
+            return 0.0
+        w = self._waits[self._idx]
+        self._idx = (self._idx + 1) % len(self._waits)
+        return w.next(send_value)
 
 
-runtime = _Wait(_runtime)
+def wait_chain(*waits: _Wait) -> _WaitChain:
+    return _WaitChain(*waits)
 
 
-def _wait_random_exponential(
-    multiplier: float = 1,
-    max_value: float | None = None,
-    exp_base: float = 2,
-    min_value: float = 0,
-) -> Generator[float, None, None]:
-    yield 0.0
-    n = 0
-    while True:
-        a = multiplier * exp_base**n
-        if max_value is not None and a > max_value:
-            a = max_value
-        if a < min_value:
-            a = min_value
-        yield random.uniform(0, a)
-        n += 1
+def wait_combine(*waits: _Wait) -> _CombinedWait:
+    return _CombinedWait(*waits)
 
 
-wait_random_exponential = _Wait(_wait_random_exponential)
+class _WaitException(_Wait):
+    def __init__(self, *, value: Callable[[Any], float]) -> None:
+        self._value = value
+
+    def next(self, send_value=None) -> float:
+        return self._value(send_value)
 
 
-def _wait_incrementing(
-    start: float = 1, increment: float = 1, max_value: float | None = None
-) -> Generator[float, None, None]:
-    yield 0.0
-    n = 0
-    while True:
-        a = start + n * increment
-        if max_value is not None and a > max_value:
-            yield max_value
-        else:
-            yield a
-        n += 1
+wait_exception = _WaitException(value=lambda x: x)
 
 
-wait_incrementing = _Wait(_wait_incrementing)
+class _WaitRandom(_Wait):
+    def __init__(self, min: float = 0, max: float = 1) -> None:
+        self._min = min
+        self._max = max
+
+    def next(self, send_value=None) -> float:
+        return random.uniform(self._min, self._max)
 
 
-def _wait_chain(
-    *generators: Generator[float, None, None],
-) -> Generator[float, None, None]:
-    yield 0.0
-    for gen in generators:
-        next(gen)
-        val = gen.send(None)
-        yield val
-        while True:
-            try:
-                val = gen.send(None)
-                yield val
-            except StopIteration:
-                break
+wait_random = _WaitRandom()
 
 
-wait_chain = _Wait(_wait_chain)
+class _WaitExponentialJitter(_Wait):
+    def __init__(
+        self, initial: float = 1, max: float = 60,
+        exp_base: float = 2, jitter: float = 1,
+    ) -> None:
+        self._initial = initial
+        self._max = max
+        self._exp_base = exp_base
+        self._jitter = jitter
+        self._n = 1
+
+    def next(self, send_value=None) -> float:
+        delay = min(self._initial * self._exp_base ** self._n, self._max)
+        delay += random.uniform(0, self._jitter)
+        self._n += 1
+        return delay
 
 
-def wait_combine(*waits: _Wait) -> _Wait:
-    def _wait_combine(**kwargs: Any) -> Generator[float, Any, None]:
-        gens = [w(**kwargs) for w in waits]
-        for g in gens:
-            next(g)
-        value = yield 0.0
-        while True:
-            total = 0.0
-            for g in gens:
-                total += g.send(value)
-            value = yield total
-
-    return _Wait(_wait_combine)
+wait_exponential_jitter = _WaitExponentialJitter()
 
 
-def _wait_exception(
-    value: Callable[[Any], float],
-) -> Generator[float, None, None]:
-    exc = yield 0.0
-    while True:
-        exc = yield value(exc)
+class _WaitNone(_Wait):
+    def next(self, send_value=None) -> float:
+        return 0.0
 
 
-wait_exception = _Wait(_wait_exception)
-
-
-def _wait_random(min: float = 0, max: float = 1) -> Generator[float, None, None]:
-    yield 0.0
-    while True:
-        yield random.uniform(min, max)
-
-
-wait_random = _Wait(_wait_random)
-
-
-def _wait_exponential_jitter(
-    initial: float = 1,
-    max: float = 60,
-    exp_base: float = 2,
-    jitter: float = 1,
-) -> Generator[float, None, None]:
-    yield 0.0
-    n = 1
-    while True:
-        delay = min(initial * exp_base**n, max)
-        delay += random.uniform(0, jitter)
-        yield delay
-        n += 1
-
-
-wait_exponential_jitter = _Wait(_wait_exponential_jitter)
-
-
-def _wait_none() -> Generator[float, None, None]:
-    yield 0.0
-    while True:
-        yield 0.0
-
-
-wait_none = _Wait(_wait_none)
+wait_none = _WaitNone()

@@ -7,7 +7,7 @@ import time as time_module
 from collections.abc import Callable, Iterable
 from typing import Any
 
-from backon._common import _elapsed, _init_wait_gen, _maybe_call, _now
+from backon._common import _elapsed, _init_wait_gen, _maybe_call, _next_wait, _now
 from backon._conditions import RetryCondition, Stop
 from backon._jitter import full_jitter
 from backon._rate_limiter import RateLimiter
@@ -189,18 +189,9 @@ class Retrying:
                 raise StopIteration
 
             max_time = _maybe_call(self._max_time)
-            try:
-                value = self._iter_wait.send(exc)
-                if self._jitter is not None:
-                    seconds = self._jitter(value)
-                else:
-                    seconds = value
-                if max_time is not None:
-                    seconds = min(seconds, max_time - self._iter_state.elapsed)
-            except StopIteration:
-                if self._raise_on_giveup:
-                    raise exc from None
-                raise StopIteration from None
+            seconds = _next_wait(
+                self._iter_wait, exc, self._jitter, self._iter_state.elapsed, max_time
+            )
 
             sleep_fn = self._sleep or time_module.sleep
             if seconds > 0:

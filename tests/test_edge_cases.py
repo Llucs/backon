@@ -23,12 +23,10 @@ from backon._conditions import (
 from backon._state import Attempt, RetryCallState, RetryError, RetryState
 from backon._wait_gen import (
     _CombinedWait,
-    _Wait,
     decay,
     expo,
     wait_exponential_jitter,
     wait_incrementing,
-    wait_none,
     wait_random,
     wait_random_exponential,
 )
@@ -296,115 +294,101 @@ class TestConditionsEdgeCases:
 class TestWaitGenEdgeCases:
     def test_decay_with_min_value(self):
         gen = decay(initial_value=10, decay_factor=2, min_value=1)
-        next(gen)
-        val = gen.send(None)
+        val = gen.next()
         assert val > 0
         for _ in range(100):
-            val = gen.send(None)
+            val = gen.next()
         assert val == 1
 
     def test_wait_random_exponential_with_limits(self):
         gen = wait_random_exponential(
             multiplier=1, max_value=10, exp_base=2, min_value=0.5
         )
-        next(gen)
         for _ in range(20):
-            val = gen.send(None)
+            val = gen.next()
             assert val <= 10
 
     def test_wait_random_exponential_without_limits(self):
         gen = wait_random_exponential()
-        next(gen)
         for _ in range(10):
-            val = gen.send(None)
+            val = gen.next()
             assert val >= 0
 
     def test_wait_incrementing_with_max(self):
         gen = wait_incrementing(start=5, increment=5, max_value=12)
-        next(gen)
         for _ in range(10):
-            val = gen.send(None)
+            val = gen.next()
             assert val <= 12
 
     def test_wait_incrementing_without_max(self):
         gen = wait_incrementing(start=1, increment=2)
-        next(gen)
-        val = gen.send(None)
+        val = gen.next()
         assert val == 1
-        val = gen.send(None)
+        val = gen.next()
         assert val == 3
 
     def test_wait_exception(self):
-        from backon._wait_gen import _wait_exception
+        from backon._wait_gen import _WaitException
 
-        gen = _wait_exception(value=lambda e: 2.0)
-        next(gen)
-        val = gen.send(ValueError())
+        gen = _WaitException(value=lambda e: 2.0)
+        val = gen.next(ValueError())
         assert val == 2.0
 
     def test_wait_chain(self):
-        from backon._wait_gen import _constant, _wait_chain
+        from backon._wait_gen import _Constant, _WaitChain
 
-        def g1():
-            yield 0
-            yield 1
-
-        g2 = _constant(interval=0.5)
-        gen = _wait_chain(g1(), g2)
-        next(gen)
-        val = gen.send(None)
+        c1 = _Constant(interval=1)
+        c2 = _Constant(interval=0.5)
+        gen = _WaitChain(c1, c2)
+        val = gen.next(None)
         assert val == 1
-        val = gen.send(None)
+        val = gen.next(None)
         assert val == 0.5
 
     def test_wait_chain_stop_iteration(self):
-        from backon._wait_gen import _wait_chain
+        from backon._wait_gen import _Constant, _WaitChain
 
-        def finite_gen():
-            yield 0
-            yield 1
-
-        g1 = finite_gen()
-        g2 = wait_none()
-        gen = _wait_chain(g1, g2)
-        next(gen)
-        val = gen.send(None)
+        c1 = _Constant(interval=1)
+        c2 = _Constant(interval=0.0)
+        gen = _WaitChain(c1, c2)
+        val = gen.next(None)
         assert val == 1
-        val = gen.send(None)
+        val = gen.next(None)
         assert val == 0.0
 
     def test_wait_radd(self):
-        w = _Wait(lambda: iter([0.0]))
+        from backon._wait_gen import _Constant
+
+        w = _Constant()
         result = 1 + w
         assert isinstance(result, _CombinedWait)
 
     def test_combined_wait_add_combined(self):
-        w1 = _Wait(lambda: iter([0.0]))
-        w2 = _Wait(lambda: iter([0.0]))
+        from backon._wait_gen import _Constant
+
+        w1 = _Constant()
+        w2 = _Constant()
         cw = _CombinedWait(w1, w2)
-        w3 = _Wait(lambda: iter([0.0]))
+        w3 = _Constant()
         result = cw + w3
         assert isinstance(result, _CombinedWait)
         assert len(result._waits) == 3
 
     def test_wait_random_basic(self):
         gen = wait_random(min=1, max=2)
-        next(gen)
-        val = gen.send(None)
+        val = gen.next()
         assert 1 <= val <= 2
 
     def test_wait_exponential_jitter(self):
         gen = wait_exponential_jitter(initial=1, max=60, exp_base=2, jitter=1)
-        next(gen)
         for _ in range(5):
-            val = gen.send(None)
+            val = gen.next()
             assert val >= 0
 
     def test_expo_max_value(self):
         gen = expo(base=2, factor=1, max_value=3)
-        next(gen)
         for _ in range(10):
-            val = gen.send(None)
+            val = gen.next()
             assert val <= 3
 
 
@@ -645,15 +629,13 @@ class TestWaitGenComposition:
     def test_expo_plus_constant(self):
         combined = expo + backon.constant
         gen = combined()
-        gen.send(None)
-        val = gen.send(None)
+        val = gen.next()
         assert val == 2.0
 
     def test_combined_wait_with_jitter(self):
         combined = expo + backon.constant
         gen = combined()
-        gen.send(None)
-        val = gen.send(None)
+        val = gen.next()
         assert val > 0
 
 

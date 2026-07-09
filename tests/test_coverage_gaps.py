@@ -33,20 +33,26 @@ from backon._testing import test_config as _test_config
 from backon._wait_gen import (
     _CombinedWait,
     _Wait,
-    _wait_chain,
-    _wait_random_exponential,
+    _WaitChain,
+    _WaitRandomExponential,
     constant,
 )
 
 _KW = dict(jitter=None, interval=0.01)
 
 
-def _finite_wait(**kwargs):
-    yield 0.0
-    yield 0.01
+class _FiniteWait(_Wait):
+    def __init__(self, **kwargs):
+        self._calls = 0
+
+    def next(self, send_value=None):
+        self._calls += 1
+        if self._calls >= 2:
+            raise StopIteration
+        return 0.01
 
 
-finite_wait = _Wait(_finite_wait)
+finite_wait = _FiniteWait
 
 
 class TestCircuitBreakerHalfOpenMaxCalls:
@@ -226,9 +232,8 @@ class TestDecideOutcomeEdgeCases:
         condition = _make_default_condition(
             exception=ValueError, giveup=None, predicate=lambda x: False
         )
-        wait = _finite_wait()
-        wait.send(None)
-        wait.send(None)
+        wait = _FiniteWait()
+        wait.next()
         action, seconds, details, use_cb, suppress = _decide_outcome(
             state,
             call_state,
@@ -252,9 +257,8 @@ class TestDecideOutcomeEdgeCases:
             exception=ValueError, giveup=None, predicate=lambda x: False
         )
         stop = _make_default_stop(max_tries=10, max_time=None)
-        wait = _finite_wait()
-        wait.send(None)
-        wait.send(None)
+        wait = _FiniteWait()
+        wait.next()
         action, seconds, details, use_cb, suppress = _decide_outcome(
             state,
             call_state,
@@ -281,7 +285,7 @@ class TestDecideOutcomeEdgeCases:
         condition = cast_condition(custom_condition)
         stop = _make_default_stop(max_tries=2, max_time=None)
         wait = constant(interval=0.01)
-        wait.send(None)
+        wait.next()
         action, seconds, details, use_cb, suppress = _decide_outcome(
             state,
             call_state,
@@ -305,9 +309,8 @@ class TestDecideOutcomeEdgeCases:
             exception=None, giveup=None, predicate=lambda x: True
         )
         stop = _make_default_stop(max_tries=10, max_time=None)
-        wait = _finite_wait()
-        wait.send(None)
-        wait.send(None)
+        wait = _FiniteWait()
+        wait.next()
         action, seconds, details, use_cb, suppress = _decide_outcome(
             state,
             call_state,
@@ -548,8 +551,8 @@ class TestTryAgainStopIteration:
 
 class TestWaitGenEdgeCases:
     def test_combined_wait_add_combined_wait(self):
-        w1 = _Wait(lambda **kw: iter([0.0]))
-        w2 = _Wait(lambda **kw: iter([0.0]))
+        w1 = _Wait()
+        w2 = _Wait()
         cw = _CombinedWait(w1, w2)
         cw2 = _CombinedWait(w1)
         result = cw + cw2
@@ -557,28 +560,21 @@ class TestWaitGenEdgeCases:
         assert len(result._waits) == 3
 
     def test_wait_random_exponential_min_value(self):
-        gen = _wait_random_exponential(
+        gen = _WaitRandomExponential(
             multiplier=1, max_value=10, exp_base=2, min_value=5
         )
-        next(gen)
-        val = gen.send(None)
+        val = gen.next(None)
         assert 0 <= val <= 5
 
     def test_wait_chain_multiple_yields(self):
-        def g1():
-            yield 0
-            yield 1
-            yield 2
+        from backon._wait_gen import _Constant
 
-        def g2():
-            yield 0
-            yield 10
-
-        gen = _wait_chain(g1(), g2())
-        next(gen)
-        assert gen.send(None) == 1
-        assert gen.send(None) == 2
-        assert gen.send(None) == 10
+        c1 = _Constant(interval=1)
+        c2 = _Constant(interval=10)
+        gen = _WaitChain(c1, c2)
+        assert gen.next(None) == 1
+        assert gen.next(None) == 10
+        assert gen.next(None) == 1
 
 
 class TestRetryAttemptSetValue:

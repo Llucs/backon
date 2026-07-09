@@ -1,3 +1,7 @@
+## 4.1.1 - 2026-07-09
+
+- Fix mypy type errors and ruff formatting issues in 4.1.0 release.
+
 ## 4.1.0 - 2026-07-09
 
 - Add fast path (`_fast.py`) — monolithic inline retry loop for the common case (no handlers, no state tracking). Avoids `RetryState`/`Attempt` dataclass allocations, `_decide_outcome()`, `_call_hdlrs`, `_retry_context_manager`, and `to_details()` dict creation. ~3μs per success call (was ~22μs).

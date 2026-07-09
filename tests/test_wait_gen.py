@@ -71,4 +71,3 @@ class TestWaitGen:
         assert g.next(1) == 2
         assert g.next(3) == 6
         assert g.next(10) == 20
-

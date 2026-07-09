@@ -63,4 +63,3 @@ class TestWaitCombine:
         )
         assert result == "ok"
         assert len(calls) == 2
-

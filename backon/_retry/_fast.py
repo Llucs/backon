@@ -34,9 +34,20 @@ class _FastState:
 
 
 def _is_fast_path(
-    condition, stop, on_success, on_backoff, on_giveup, on_attempt,
-    before_sleep, before, after, retry_error_callback, _holder, jitter,
-    rate_limit, attempt_timeout,
+    condition,
+    stop,
+    on_success,
+    on_backoff,
+    on_giveup,
+    on_attempt,
+    before_sleep,
+    before,
+    after,
+    retry_error_callback,
+    _holder,
+    jitter,
+    rate_limit,
+    attempt_timeout,
 ):
     if on_success:
         return False
@@ -66,8 +77,14 @@ def _is_fast_path(
 
 
 def _retry_fast_sync(
-    target, wait_gen, condition, stop, jitter, max_time,
-    wait_gen_kwargs, sleep,
+    target,
+    wait_gen,
+    condition,
+    stop,
+    jitter,
+    max_time,
+    wait_gen_kwargs,
+    sleep,
 ):
     state = _FastState()
     start_time = _now()
@@ -84,9 +101,7 @@ def _retry_fast_sync(
             state.outcome.exception = None
             state.outcome.value = None
             try:
-                seconds = _next_wait(
-                    wait, None, jitter, state.elapsed, max_time
-                )
+                seconds = _next_wait(wait, None, jitter, state.elapsed, max_time)
             except StopIteration:
                 break
             if stop(state):
@@ -112,18 +127,19 @@ def _retry_fast_sync(
                 return ret
 
         if stop(state):
-            raise exc if exc is not None else RuntimeError(
-                "stop triggered on success"
-            )
+            raise exc if exc is not None else RuntimeError("stop triggered on success")
 
         try:
             seconds = _next_wait(
-                wait, exc if exc is not None else ret,
-                jitter, state.elapsed, max_time,
+                wait,
+                exc if exc is not None else ret,
+                jitter,
+                state.elapsed,
+                max_time,
             )
         except StopIteration:
-            raise exc if exc is not None else RuntimeError(
-                "stop triggered on success"
+            raise (
+                exc if exc is not None else RuntimeError("stop triggered on success")
             ) from None
 
         if seconds > 0:
@@ -132,8 +148,14 @@ def _retry_fast_sync(
 
 
 async def _retry_fast_async(
-    target, wait_gen, condition, stop, jitter, max_time,
-    wait_gen_kwargs, sleep,
+    target,
+    wait_gen,
+    condition,
+    stop,
+    jitter,
+    max_time,
+    wait_gen_kwargs,
+    sleep,
 ):
     state = _FastState()
     start_time = _now()
@@ -150,9 +172,7 @@ async def _retry_fast_async(
             state.outcome.exception = None
             state.outcome.value = None
             try:
-                seconds = _next_wait(
-                    wait, None, jitter, state.elapsed, max_time
-                )
+                seconds = _next_wait(wait, None, jitter, state.elapsed, max_time)
             except StopIteration:
                 break
             if stop(state):
@@ -178,18 +198,19 @@ async def _retry_fast_async(
                 return ret
 
         if stop(state):
-            raise exc if exc is not None else RuntimeError(
-                "stop triggered on success"
-            )
+            raise exc if exc is not None else RuntimeError("stop triggered on success")
 
         try:
             seconds = _next_wait(
-                wait, exc if exc is not None else ret,
-                jitter, state.elapsed, max_time,
+                wait,
+                exc if exc is not None else ret,
+                jitter,
+                state.elapsed,
+                max_time,
             )
         except StopIteration:
-            raise exc if exc is not None else RuntimeError(
-                "stop triggered on success"
+            raise (
+                exc if exc is not None else RuntimeError("stop triggered on success")
             ) from None
 
         if seconds > 0:
@@ -228,17 +249,34 @@ def _retry_fast_sync_inner(
         wait_gen_kwargs = {}
 
     if _is_fast_path(
-        condition, stop, on_success, on_backoff, on_giveup, on_attempt,
-        before_sleep, before, after, retry_error_callback, _holder, jitter,
-        rate_limit, attempt_timeout,
+        condition,
+        stop,
+        on_success,
+        on_backoff,
+        on_giveup,
+        on_attempt,
+        before_sleep,
+        before,
+        after,
+        retry_error_callback,
+        _holder,
+        jitter,
+        rate_limit,
+        attempt_timeout,
     ):
         max_tries, max_time = _apply_test_overrides(max_tries, max_time)
         if stop is None:
             stop = _make_default_stop(max_tries, max_time)
         _sleep = sleep or time_module.sleep
         return _retry_fast_sync(
-            target, wait_gen, condition, stop, jitter, max_time,
-            wait_gen_kwargs, _sleep,
+            target,
+            wait_gen,
+            condition,
+            stop,
+            jitter,
+            max_time,
+            wait_gen_kwargs,
+            _sleep,
         )
 
     max_tries, max_time = _apply_test_overrides(max_tries, max_time)
@@ -301,17 +339,34 @@ async def _retry_fast_async_inner(
         wait_gen_kwargs = {}
 
     if _is_fast_path(
-        condition, stop, on_success, on_backoff, on_giveup, on_attempt,
-        before_sleep, before, after, retry_error_callback, _holder, jitter,
-        rate_limit, attempt_timeout,
+        condition,
+        stop,
+        on_success,
+        on_backoff,
+        on_giveup,
+        on_attempt,
+        before_sleep,
+        before,
+        after,
+        retry_error_callback,
+        _holder,
+        jitter,
+        rate_limit,
+        attempt_timeout,
     ):
         max_tries, max_time = _apply_test_overrides(max_tries, max_time)
         if stop is None:
             stop = _make_default_stop(max_tries, max_time)
         _sleep = sleep or asyncio.sleep
         return await _retry_fast_async(
-            target, wait_gen, condition, stop, jitter, max_time,
-            wait_gen_kwargs, _sleep,
+            target,
+            wait_gen,
+            condition,
+            stop,
+            jitter,
+            max_time,
+            wait_gen_kwargs,
+            _sleep,
         )
 
     max_tries, max_time = _apply_test_overrides(max_tries, max_time)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import math
 import random
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from typing import Any
 
 
@@ -44,7 +44,9 @@ class _CombinedWait(_Wait):
 
 class _Expo(_Wait):
     def __init__(
-        self, base: float = 2, factor: float = 1,
+        self,
+        base: float = 2,
+        factor: float = 1,
         max_value: float | None = None,
     ) -> None:
         self._base = base
@@ -53,7 +55,7 @@ class _Expo(_Wait):
         self._n = 0
 
     def next(self, send_value=None) -> float:
-        a = self._factor * self._base ** self._n
+        a = self._factor * self._base**self._n
         if self._max_value is None or a < self._max_value:
             self._n += 1
             return a
@@ -65,7 +67,9 @@ expo = _Expo()
 
 class _Decay(_Wait):
     def __init__(
-        self, initial_value: float = 1, decay_factor: float = 1,
+        self,
+        initial_value: float = 1,
+        decay_factor: float = 1,
         min_value: float | None = None,
     ) -> None:
         self._initial_value = initial_value
@@ -74,7 +78,7 @@ class _Decay(_Wait):
         self._t = 0
 
     def next(self, send_value=None) -> float:
-        a = self._initial_value * math.e ** (-self._t * self._decay_factor)
+        a = self._initial_value * float(math.e ** (-self._t * self._decay_factor))
         if self._min_value is None or a > self._min_value:
             self._t += 1
             return a
@@ -103,6 +107,7 @@ fibo = _Fibo()
 
 class _Constant(_Wait):
     def __init__(self, interval: int | float | Sequence[float] = 1) -> None:
+        self._itr: Iterator[float]
         if isinstance(interval, (int, float)):
             self._itr = itertools.repeat(float(interval))
         else:
@@ -128,8 +133,10 @@ runtime = _Runtime(value=lambda x: x)
 
 class _WaitRandomExponential(_Wait):
     def __init__(
-        self, multiplier: float = 1,
-        max_value: float | None = None, exp_base: float = 2,
+        self,
+        multiplier: float = 1,
+        max_value: float | None = None,
+        exp_base: float = 2,
         min_value: float = 0,
     ) -> None:
         self._multiplier = multiplier
@@ -139,7 +146,7 @@ class _WaitRandomExponential(_Wait):
         self._n = 0
 
     def next(self, send_value=None) -> float:
-        a = self._multiplier * self._exp_base ** self._n
+        a = self._multiplier * self._exp_base**self._n
         if self._max_value is not None and a > self._max_value:
             a = self._max_value
         if a < self._min_value:
@@ -153,7 +160,9 @@ wait_random_exponential = _WaitRandomExponential()
 
 class _WaitIncrementing(_Wait):
     def __init__(
-        self, start: float = 1, increment: float = 1,
+        self,
+        start: float = 1,
+        increment: float = 1,
         max_value: float | None = None,
     ) -> None:
         self._start = start
@@ -221,8 +230,11 @@ wait_random = _WaitRandom()
 
 class _WaitExponentialJitter(_Wait):
     def __init__(
-        self, initial: float = 1, max: float = 60,
-        exp_base: float = 2, jitter: float = 1,
+        self,
+        initial: float = 1,
+        max: float = 60,
+        exp_base: float = 2,
+        jitter: float = 1,
     ) -> None:
         self._initial = initial
         self._max = max
@@ -231,7 +243,7 @@ class _WaitExponentialJitter(_Wait):
         self._n = 1
 
     def next(self, send_value=None) -> float:
-        delay = min(self._initial * self._exp_base ** self._n, self._max)
+        delay = min(self._initial * self._exp_base**self._n, self._max)
         delay += random.uniform(0, self._jitter)
         self._n += 1
         return delay

@@ -509,10 +509,10 @@ class TestNewWaitGenerators:
             wait_none,
             exception=ValueError,
             max_tries=5,
-
         )
         assert result == "ok"
         assert len(calls) == 3
+
 
 class TestWaitAddition:
     def test_wait_add_returns_combined(self):

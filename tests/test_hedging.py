@@ -189,7 +189,6 @@ class TestHedgeEdgeCases:
             )
         assert len(calls) == 1
 
-    @pytest.mark.skip(reason="pending #18: fast path RuntimeError on success+stop")
     def test_hedge_predicate_path_does_not_crash(self):
         calls = []
 

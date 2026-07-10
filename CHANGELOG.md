@@ -1,3 +1,9 @@
+## 4.1.3 - 2026-07-10
+
+- Fix `raise_on_giveup=False` being silently ignored in the fast path (#17): `_retry_fast_sync` and `_retry_fast_async` now thread the `raise_on_giveup` flag and return `None` on giveup when it is `False`, matching the non-fast path (`_retry_loop_*`).
+- Fix the fast path raising `RuntimeError("stop triggered on success")` when the `stop` predicate fires on the same iteration where the target call succeeds but the condition still asks for a retry (#18): the fast path now returns the successful `ret` in that case, matching `_decide_outcome`/`_retry_loop_*` behaviour.
+- Add `tests/test_fast_path.py` covering both regressions (sync + async, direct `_retry_fast_*` calls and via decorators).
+
 ## 4.1.2 - 2026-07-10
 
 - Fix `hedge()` raising `TypeError: 'NoneType' object is not callable` whenever the target function raised (issue #16). The hedge helpers now build a default `RetryCondition` via `_make_default_condition(exception, giveup, predicate)` before fanning out, mirroring `_retry_sync`/`_retry_async`. Hedge futures also honour the final exception by passing `raise_on_giveup=True` so that a fully-failed hedge surfaces the real error instead of `None`.

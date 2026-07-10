@@ -85,6 +85,7 @@ def _retry_fast_sync(
     max_time,
     wait_gen_kwargs,
     sleep,
+    raise_on_giveup=True,
 ):
     state = _FastState()
     start_time = _now()
@@ -121,13 +122,19 @@ def _retry_fast_sync(
         if exc is not None:
             result = condition(state)
             if not result:
-                raise exc
+                if raise_on_giveup:
+                    raise exc
+                return None
         else:
             if not condition(state):
                 return ret
 
         if stop(state):
-            raise exc if exc is not None else RuntimeError("stop triggered on success")
+            if exc is not None:
+                if raise_on_giveup:
+                    raise exc
+                return None
+            return ret
 
         try:
             seconds = _next_wait(
@@ -138,9 +145,11 @@ def _retry_fast_sync(
                 max_time,
             )
         except StopIteration:
-            raise (
-                exc if exc is not None else RuntimeError("stop triggered on success")
-            ) from None
+            if exc is not None:
+                if raise_on_giveup:
+                    raise exc from None
+                return None
+            return ret
 
         if seconds > 0:
             _check_hot_loop()
@@ -156,6 +165,7 @@ async def _retry_fast_async(
     max_time,
     wait_gen_kwargs,
     sleep,
+    raise_on_giveup=True,
 ):
     state = _FastState()
     start_time = _now()
@@ -192,13 +202,19 @@ async def _retry_fast_async(
         if exc is not None:
             result = condition(state)
             if not result:
-                raise exc
+                if raise_on_giveup:
+                    raise exc
+                return None
         else:
             if not condition(state):
                 return ret
 
         if stop(state):
-            raise exc if exc is not None else RuntimeError("stop triggered on success")
+            if exc is not None:
+                if raise_on_giveup:
+                    raise exc
+                return None
+            return ret
 
         try:
             seconds = _next_wait(
@@ -209,9 +225,11 @@ async def _retry_fast_async(
                 max_time,
             )
         except StopIteration:
-            raise (
-                exc if exc is not None else RuntimeError("stop triggered on success")
-            ) from None
+            if exc is not None:
+                if raise_on_giveup:
+                    raise exc from None
+                return None
+            return ret
 
         if seconds > 0:
             _check_hot_loop()
@@ -277,6 +295,7 @@ def _retry_fast_sync_inner(
             max_time,
             wait_gen_kwargs,
             _sleep,
+            raise_on_giveup=raise_on_giveup,
         )
 
     max_tries, max_time = _apply_test_overrides(max_tries, max_time)
@@ -367,6 +386,7 @@ async def _retry_fast_async_inner(
             max_time,
             wait_gen_kwargs,
             _sleep,
+            raise_on_giveup=raise_on_giveup,
         )
 
     max_tries, max_time = _apply_test_overrides(max_tries, max_time)

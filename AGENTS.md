@@ -39,16 +39,33 @@
 ## Architecture
 
 - Zero external dependencies. The stdlib is all you get.
-- `_sync.py` — synchronous retry logic
-- `_async.py` — async retry logic
-- `_decorator.py` — decorator API (`on_exception`, `on_predicate`)
-- `_retry.py` — functional API (`retry()`, `Retrying`)
-- `_common.py` — shared helpers, global disable/enable
-- `_wait_gen.py` — wait generators (`expo`, `constant`, `fibo`, etc.)
-- `_jitter.py` — jitter functions
-- `_typing.py` — internal type aliases
-- `types.py` — public types (`Details`)
-- Tests mirror the source structure in `tests/`.
+- `__init__.py` — public API surface; re-exports everything in `__all__`, defines `__version__` via `importlib.metadata`.
+- `_retry/__init__.py` — plumbing index for the `_retry/` subpackage.
+- `_retry/_api.py` — `_retry_sync`, `_retry_async`, `retry()` functional entry points.
+- `_retry/_classes.py` — `Retrying`, `RetryingCaller`, `AsyncRetryingCaller`, `_RetryAttempt`, `sleep_using_event`.
+- `_retry/_decide.py` — `_decide_outcome`, `_call_hdlrs`, `_RetryAction` (decide retry/giveup/success after each attempt; writes the upcoming wait into `state.outcome.wait` before the `Stop` predicate runs).
+- `_retry/_fast.py` — fast path (`_retry_fast_sync`, `_retry_fast_async`, `_is_fast_path`); entered when `jitter=None` and `logger=None` and no custom `stop`/`condition`.
+- `_retry/_inner.py` — `_retry_sync_inner` / `_retry_async_inner`: thin routing between fast path and the full loop.
+- `_retry/_loops.py` — `_retry_loop_sync` / `_retry_loop_async`: the full (non-fast) loop used when handlers / custom stop / dynamic wait are configured.
+- `_retry/_helpers.py` — `_to_seconds`, `_make_default_stop`, `_make_default_condition`.
+- `_common.py` — shared helpers (`_init_wait_gen`, `_next_wait`, `_LazyLogHandler`, `_config_handlers`, `_check_hot_loop`), global `_GLOBAL_ENABLED` / `_TEST_CONFIG` toggle.
+- `_decorator.py` — decorator API (`on_exception`, `on_predicate`); supports sync, async, generators, async generators, `staticmethod` wrapping, `retry_with`.
+- `_conditions.py` — `Stop` hierarchy and `RetryCondition` hierarchy with operator overloading (`|`, `&`).
+- `_context.py` — `contextvars` retry context (`is_retrying`, `get_attempt_number`), set in both fast and non-fast paths.
+- `_wait_gen.py` — wait generators (`_Wait` and subclasses: `expo`, `constant`, `fibo`, `decay`, `runtime`, `wait_chain`, `wait_combine`, `wait_incrementing`, `wait_random`, `wait_random_exponential`, `wait_exception`, `wait_exponential_jitter`, `wait_none`); pre-configured kwargs are preserved across composition (`+`, `wait_combine`, `wait_chain`).
+- `_jitter.py` — jitter functions (`full_jitter`, `random_jitter`).
+- `_circuit_breaker.py` — `CircuitBreaker`, `BreakerRetrying`, `CircuitOpenError` (CLOSED / OPEN / HALF_OPEN).
+- `_hedging.py` — `hedge`, `on_hedge`, `HedgingRetrying`, `HedgeError` (concurrent requests, first success wins).
+- `_rate_limiter.py` — `RateLimiter`, `RateLimitError` (raises `RateLimitError` only for direct `__call__`/`acquire`; inside a retry loop it throttles by sleeping).
+- `_instrumentation.py` — `MetricsCollector`, `PrometheusMetrics`, `OTelMetrics`, `StructlogMetrics`, `set_metrics_collector`, `get_metrics_collector`, `_auto_detect_collector`.
+- `_state.py` — `Attempt`, `RetryState`, `RetryCallState`, `TryAgain`, `RetryError`, `AttemptTimeoutError`.
+- `_testing.py` — testing helpers (`disable_retries`, `enable_retries`, `test_config`, `limit_retries`, `remove_backoff`, `assert_retried`, `assert_not_retried`, `RetryAssertionError`); `assert_retried`/`assert_not_retried` drive the user's `fn` through `on_exception`.
+- `_trio.py` — trio support (`retry_exception`, `retry_predicate`); deliberately private (trio is an optional dep — import via `backon._trio`).
+- `_typing.py` — internal type aliases (`_Handler`, `_Jitterer`, `_Predicate`, `_WaitGenerator` etc.).
+- `types.py` — public types (`Details`).
+- `py.typed` — PEP 561 marker.
+- `_sync.py` / `_async.py` — **deprecation stubs** (replaced by the `_retry/` subpackage in 4.0.0; emit `DeprecationWarning` on import). Edit the live logic in `backon/_retry/_loops.py` and `_fast.py`, NOT these stubs.
+- Tests live in `tests/` and use a feature-oriented naming (`test_features.py`, `test_coverage_gaps.py`, `test_coverage_v4.py`, `test_edge_cases.py`, `test_fast_path.py`, `test_hedging.py`, `test_retrying_caller.py`, `test_assertions.py`, …) rather than a one-`test_`-per-source-file mirror.
 
 ## API Design
 

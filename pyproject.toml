@@ -4,7 +4,7 @@ build-backend = "pdm.backend"
 
 [project]
 name = "backon"
-version = "4.2.2"
+version = "4.2.3"
 description = "Function decoration for backoff and retry"
 readme = "README.md"
 license = "MIT"

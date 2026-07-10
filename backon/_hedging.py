@@ -11,6 +11,7 @@ from typing import Any, TypeVar, cast
 
 from backon._jitter import full_jitter
 from backon._retry import _retry_async_inner, _retry_sync_inner
+from backon._retry._helpers import _make_default_condition
 from backon._typing import (
     P,
     R,
@@ -101,6 +102,8 @@ def _hedge_sync(
         else:
             on_hedge_list = [on_hedge]
 
+    condition = _make_default_condition(exception, None, predicate)
+
     first_exc = None
     with ThreadPoolExecutor(max_workers=max_hedge) as executor:
         futures = set()
@@ -109,7 +112,7 @@ def _hedge_sync(
                 _retry_sync_inner,
                 _make_hedge_target(target, (), {}),
                 wait_gen,
-                condition=None,
+                condition=condition,
                 max_tries=max_tries,
                 max_time=max_time,
                 jitter=jitter,
@@ -120,7 +123,7 @@ def _hedge_sync(
                 before_sleep=None,
                 sleep=None,
                 retry_error_callback=None,
-                raise_on_giveup=False,
+                raise_on_giveup=True,
                 wait_gen_kwargs=wait_gen_kwargs,
             )
             futures.add(fut)
@@ -170,11 +173,13 @@ async def _hedge_async(
         else:
             on_hedge_list = [on_hedge]
 
+    condition = _make_default_condition(exception, None, predicate)
+
     async def run_hedge():
         return await _retry_async_inner(
             lambda: target(*(), **{}),
             wait_gen,
-            condition=None,
+            condition=condition,
             max_tries=max_tries,
             max_time=max_time,
             jitter=jitter,
@@ -185,7 +190,7 @@ async def _hedge_async(
             before_sleep=None,
             sleep=None,
             retry_error_callback=None,
-            raise_on_giveup=False,
+            raise_on_giveup=True,
             wait_gen_kwargs=wait_gen_kwargs,
         )
 

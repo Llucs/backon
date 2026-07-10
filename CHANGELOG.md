@@ -1,3 +1,8 @@
+## 4.1.2 - 2026-07-10
+
+- Fix `hedge()` raising `TypeError: 'NoneType' object is not callable` whenever the target function raised (issue #16). The hedge helpers now build a default `RetryCondition` via `_make_default_condition(exception, giveup, predicate)` before fanning out, mirroring `_retry_sync`/`_retry_async`. Hedge futures also honour the final exception by passing `raise_on_giveup=True` so that a fully-failed hedge surfaces the real error instead of `None`.
+- Add `tests/test_hedging.py` with sync/async/decorator/context-manager coverage for `hedge()`, `on_hedge()`, and `HedgingRetrying` (18 tests, 1 skipped pending #18).
+
 ## 4.1.1 - 2026-07-09
 
 - Fix mypy type errors and ruff formatting issues in 4.1.0 release.

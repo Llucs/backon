@@ -1,3 +1,8 @@
+## 4.1.5 - 2026-07-10
+
+- Fix wait generators losing pre-configured kwargs when composed with `+`, `wait_combine()`, or `wait_chain()` (#15). `_Wait` now stores its original constructor args/kwargs and `__call__` merges them with any caller-supplied kwargs, so pre-configured instances such as `backon.expo(base=3)` and `backon.constant(interval=0.2)` preserve their configuration through composition and re-instantiation inside the retry loop.
+- Add `TestPreconfiguredKwargsPreserved` (7 tests) to `tests/test_wait_combine.py` covering `wait_combine`, the `+` operator, `wait_chain`, decorator integration, and call-time kwarg override.
+
 ## 4.1.4 - 2026-07-10
 
 - Fix `is_retrying()` / `get_attempt_number()` returning `None` inside a retry when the fast path was active (#19). The fast paths `_retry_fast_sync` and `_retry_fast_async` now enter `_retry_context_manager(state.tries)` around the `target()` call, matching the non-fast path. The README's "contextvars — thread-safe and async-safe" guarantee now holds for every retry configuration, not only those that force the slow path.

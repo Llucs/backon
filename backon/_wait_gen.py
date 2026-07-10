@@ -9,13 +9,15 @@ from typing import Any
 
 class _Wait:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        pass
+        self._args = args
+        self._kwargs = kwargs
 
     def next(self, send_value=None) -> float:
         raise NotImplementedError
 
     def __call__(self, **kwargs: Any) -> _Wait:
-        return self.__class__(**kwargs)
+        merged = {**self._kwargs, **kwargs}
+        return self.__class__(*self._args, **merged)
 
     def __add__(self, other: _Wait) -> _CombinedWait:
         if isinstance(other, _CombinedWait):
@@ -28,6 +30,7 @@ class _Wait:
 
 class _CombinedWait(_Wait):
     def __init__(self, *waits: _Wait) -> None:
+        super().__init__()
         self._waits = tuple(waits)
 
     def next(self, send_value=None) -> float:
@@ -49,6 +52,7 @@ class _Expo(_Wait):
         factor: float = 1,
         max_value: float | None = None,
     ) -> None:
+        super().__init__(base=base, factor=factor, max_value=max_value)
         self._base = base
         self._factor = factor
         self._max_value = max_value
@@ -72,6 +76,11 @@ class _Decay(_Wait):
         decay_factor: float = 1,
         min_value: float | None = None,
     ) -> None:
+        super().__init__(
+            initial_value=initial_value,
+            decay_factor=decay_factor,
+            min_value=min_value,
+        )
         self._initial_value = initial_value
         self._decay_factor = decay_factor
         self._min_value = min_value
@@ -90,6 +99,7 @@ decay = _Decay()
 
 class _Fibo(_Wait):
     def __init__(self, max_value: int | None = None) -> None:
+        super().__init__(max_value=max_value)
         self._max_value = max_value
         self._a = 1
         self._b = 1
@@ -107,6 +117,7 @@ fibo = _Fibo()
 
 class _Constant(_Wait):
     def __init__(self, interval: int | float | Sequence[float] = 1) -> None:
+        super().__init__(interval=interval)
         self._itr: Iterator[float]
         if isinstance(interval, (int, float)):
             self._itr = itertools.repeat(float(interval))
@@ -122,6 +133,7 @@ constant = _Constant()
 
 class _Runtime(_Wait):
     def __init__(self, *, value: Callable[[Any], float]) -> None:
+        super().__init__(value=value)
         self._value = value
 
     def next(self, send_value=None) -> float:
@@ -139,6 +151,12 @@ class _WaitRandomExponential(_Wait):
         exp_base: float = 2,
         min_value: float = 0,
     ) -> None:
+        super().__init__(
+            multiplier=multiplier,
+            max_value=max_value,
+            exp_base=exp_base,
+            min_value=min_value,
+        )
         self._multiplier = multiplier
         self._max_value = max_value
         self._exp_base = exp_base
@@ -165,6 +183,7 @@ class _WaitIncrementing(_Wait):
         increment: float = 1,
         max_value: float | None = None,
     ) -> None:
+        super().__init__(start=start, increment=increment, max_value=max_value)
         self._start = start
         self._increment = increment
         self._max_value = max_value
@@ -183,6 +202,7 @@ wait_incrementing = _WaitIncrementing()
 
 class _WaitChain(_Wait):
     def __init__(self, *waits: _Wait) -> None:
+        super().__init__()
         self._waits = list(waits)
         self._idx = 0
 
@@ -207,6 +227,7 @@ def wait_combine(*waits: _Wait) -> _CombinedWait:
 
 class _WaitException(_Wait):
     def __init__(self, *, value: Callable[[Any], float]) -> None:
+        super().__init__(value=value)
         self._value = value
 
     def next(self, send_value=None) -> float:
@@ -218,6 +239,7 @@ wait_exception = _WaitException(value=lambda x: x)
 
 class _WaitRandom(_Wait):
     def __init__(self, min: float = 0, max: float = 1) -> None:
+        super().__init__(min=min, max=max)
         self._min = min
         self._max = max
 
@@ -236,6 +258,7 @@ class _WaitExponentialJitter(_Wait):
         exp_base: float = 2,
         jitter: float = 1,
     ) -> None:
+        super().__init__(initial=initial, max=max, exp_base=exp_base, jitter=jitter)
         self._initial = initial
         self._max = max
         self._exp_base = exp_base

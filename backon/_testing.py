@@ -84,22 +84,24 @@ class RetryAssertionError(AssertionError):
 def assert_retried(fn: Callable[[], Any], expected_tries: int) -> None:
     call_count = 0
 
-    def wrapper() -> Any:
+    def spy() -> Any:
         nonlocal call_count
         call_count += 1
-        raise ValueError()
+        return fn()
 
-    from backon._retry import _retry_sync_inner
+    from backon._decorator import on_exception
     from backon._wait_gen import wait_none
 
-    _retry_sync_inner(
-        wrapper,
+    decorated = on_exception(
         wait_none,
+        Exception,
+        max_tries=expected_tries,
         jitter=None,
         raise_on_giveup=False,
         sleep=lambda s: None,
-        max_tries=expected_tries,
-    )
+        logger=None,
+    )(spy)
+    decorated()
 
     if call_count != expected_tries:
         raise RetryAssertionError(f"Expected {expected_tries} tries, got {call_count}")
@@ -108,10 +110,24 @@ def assert_retried(fn: Callable[[], Any], expected_tries: int) -> None:
 def assert_not_retried(fn: Callable[[], Any]) -> None:
     call_count = 0
 
-    def wrapper() -> Any:
+    def spy() -> Any:
         nonlocal call_count
         call_count += 1
+        return fn()
 
-    wrapper()
+    from backon._decorator import on_exception
+    from backon._wait_gen import wait_none
+
+    decorated = on_exception(
+        wait_none,
+        Exception,
+        max_tries=1,
+        jitter=None,
+        raise_on_giveup=False,
+        sleep=lambda s: None,
+        logger=None,
+    )(spy)
+    decorated()
+
     if call_count != 1:
         raise RetryAssertionError(f"Expected 1 try, got {call_count}")

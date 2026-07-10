@@ -1,5 +1,7 @@
 ## 4.1.5 - 2026-07-10
 
+- Fix `assert_retried()` / `assert_not_retried()` ignoring their `fn` argument (#22). Both helpers now wrap the user-supplied `fn` in a counting spy, drive it through `on_exception`, and assert the spy was invoked exactly `expected_tries` (resp. exactly 1) times. `assert_retried` failing when `fn` does not actually raise is now detectable instead of silently passing.
+- Add `tests/test_assertions.py` (7 tests) covering fn invocation, the non-raising-fn failure path, non-`ValueError` exceptions, and the raising-fn path of `assert_not_retried`.
 - Fix wait generators losing pre-configured kwargs when composed with `+`, `wait_combine()`, or `wait_chain()` (#15). `_Wait` now stores its original constructor args/kwargs and `__call__` merges them with any caller-supplied kwargs, so pre-configured instances such as `backon.expo(base=3)` and `backon.constant(interval=0.2)` preserve their configuration through composition and re-instantiation inside the retry loop.
 - Add `TestPreconfiguredKwargsPreserved` (7 tests) to `tests/test_wait_combine.py` covering `wait_combine`, the `+` operator, `wait_chain`, decorator integration, and call-time kwarg override.
 

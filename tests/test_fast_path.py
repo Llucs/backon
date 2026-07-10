@@ -199,3 +199,82 @@ class TestFastPathSuccessPlusStop:
         r = poll()
         assert r is None
         assert calls == [1, 1, 1]
+
+
+class TestFastPathRetryContext:
+    def test_get_attempt_number_returns_real_value_in_fast_path(self):
+        collected = []
+
+        @backon.on_exception(
+            backon.expo,
+            ValueError,
+            max_tries=3,
+            jitter=None,
+            logger=None,
+        )
+        def f():
+            collected.append(backon.get_attempt_number())
+            raise ValueError()
+
+        with pytest.raises(ValueError):
+            f()
+        assert collected == [1, 2, 3]
+
+    def test_is_retrying_true_in_fast_path(self):
+        collected = []
+
+        @backon.on_exception(
+            backon.expo,
+            ValueError,
+            max_tries=2,
+            jitter=None,
+            logger=None,
+        )
+        def f():
+            collected.append(backon.is_retrying())
+            raise ValueError()
+
+        with pytest.raises(ValueError):
+            f()
+        assert collected == [True, True]
+
+    def test_get_attempt_number_none_outside_retry(self):
+        assert backon.get_attempt_number() is None
+        assert backon.is_retrying() is False
+
+    async def test_get_attempt_number_async_fast_path(self):
+        collected = []
+
+        @backon.on_exception(
+            backon.expo,
+            ValueError,
+            max_tries=2,
+            jitter=None,
+            logger=None,
+        )
+        async def f():
+            collected.append(backon.get_attempt_number())
+            raise ValueError()
+
+        with pytest.raises(ValueError):
+            await f()
+        assert collected == [1, 2]
+
+    def test_get_attempt_number_via_retry_functional_fast_path(self):
+        collected = []
+
+        def f():
+            collected.append(backon.get_attempt_number())
+            raise ValueError()
+
+        with pytest.raises(ValueError):
+            backon.retry(
+                f,
+                backon.expo,
+                exception=ValueError,
+                max_tries=3,
+                jitter=None,
+                logger=None,
+                sleep=lambda s: None,
+            )
+        assert collected == [1, 2, 3]

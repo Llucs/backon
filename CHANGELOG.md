@@ -1,3 +1,8 @@
+## 4.1.4 - 2026-07-10
+
+- Fix `is_retrying()` / `get_attempt_number()` returning `None` inside a retry when the fast path was active (#19). The fast paths `_retry_fast_sync` and `_retry_fast_async` now enter `_retry_context_manager(state.tries)` around the `target()` call, matching the non-fast path. The README's "contextvars — thread-safe and async-safe" guarantee now holds for every retry configuration, not only those that force the slow path.
+- Add `TestFastPathRetryContext` (5 tests) to `tests/test_fast_path.py` covering sync, async, functional API, and the outside-retry default.
+
 ## 4.1.3 - 2026-07-10
 
 - Fix `raise_on_giveup=False` being silently ignored in the fast path (#17): `_retry_fast_sync` and `_retry_fast_async` now thread the `raise_on_giveup` flag and return `None` on giveup when it is `False`, matching the non-fast path (`_retry_loop_*`).

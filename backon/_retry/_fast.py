@@ -11,6 +11,7 @@ from backon._common import (
     _now,
     is_enabled,
 )
+from backon._context import _retry_context_manager
 from backon._retry._helpers import _make_default_stop
 from backon._retry._loops import _retry_loop_async, _retry_loop_sync
 from backon._state import TryAgain
@@ -97,7 +98,8 @@ def _retry_fast_sync(
 
         exc = None
         try:
-            ret = target()
+            with _retry_context_manager(state.tries):
+                ret = target()
         except TryAgain:
             state.outcome.exception = None
             state.outcome.value = None
@@ -177,7 +179,8 @@ async def _retry_fast_async(
 
         exc = None
         try:
-            ret = await target()
+            with _retry_context_manager(state.tries):
+                ret = await target()
         except TryAgain:
             state.outcome.exception = None
             state.outcome.value = None

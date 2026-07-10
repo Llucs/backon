@@ -338,24 +338,60 @@ class RetryingCaller:
         self,
         wait_gen: _WaitGenerator = expo,
         *,
-        exception: type[Exception] | None = None,
-        max_tries: int | None = None,
-        max_time: float | None = None,
+        exception: _MaybeSequence[type[Exception]] | None = None,
+        predicate: _Predicate[Any] = operator.not_,
+        max_tries: _MaybeCallable[int] | None = None,
+        max_time: _MaybeCallable[float] | None = None,
         jitter: _Jitterer | None = full_jitter,
+        giveup: _Predicate[Exception] = lambda e: False,
+        condition: RetryCondition | None = None,
+        stop: Stop | None = None,
+        on_success: _Handler | Iterable[_Handler] | None = None,
+        on_backoff: _Handler | Iterable[_Handler] | None = None,
+        on_giveup: _Handler | Iterable[_Handler] | None = None,
+        on_attempt: _Handler | Iterable[_Handler] | None = None,
+        before_sleep: _Handler | Iterable[_Handler] | None = None,
+        retry_error_callback: Callable[[dict], Any] | None = None,
+        raise_on_giveup: bool = True,
+        logger: _MaybeLogger = "backon",
+        backoff_log_level: int = logging.INFO,
+        giveup_log_level: int = logging.ERROR,
+        sleep: Callable[[float], Any] | None = None,
+        name: str = "",
+        before: _Handler | Iterable[_Handler] | None = None,
+        after: _Handler | Iterable[_Handler] | None = None,
         rate_limit: RateLimiter | None = None,
         attempt_timeout: float | None = None,
         **wait_gen_kwargs: Any,
     ) -> None:
         self._wait_gen = wait_gen
         self._exception = exception
+        self._predicate = predicate
         self._max_tries = max_tries
         self._max_time = max_time
         self._jitter = jitter
+        self._giveup = giveup
+        self._condition = condition
+        self._stop = stop
+        self._on_success = on_success
+        self._on_backoff = on_backoff
+        self._on_giveup = on_giveup
+        self._on_attempt = on_attempt
+        self._before_sleep = before_sleep
+        self._retry_error_callback = retry_error_callback
+        self._raise_on_giveup = raise_on_giveup
+        self._logger = logger
+        self._backoff_log_level = backoff_log_level
+        self._giveup_log_level = giveup_log_level
+        self._sleep = sleep
+        self._name = name
+        self._before = before
+        self._after = after
         self._rate_limit = rate_limit
         self._attempt_timeout = attempt_timeout
         self._wait_gen_kwargs = wait_gen_kwargs
 
-    def on(self, exception: type[Exception]) -> RetryingCaller:
+    def on(self, exception: _MaybeSequence[type[Exception]]) -> RetryingCaller:
         new = self.copy()
         new._exception = exception
         return new
@@ -368,11 +404,28 @@ class RetryingCaller:
         return _retry_sync(
             lambda: target(*args, **kwargs),
             self._wait_gen,
+            predicate=self._predicate,
             exception=self._exception,
             max_tries=self._max_tries,
             max_time=self._max_time,
             jitter=self._jitter,
+            giveup=self._giveup,
+            condition=self._condition,
+            stop=self._stop,
+            on_success=self._on_success,
+            on_backoff=self._on_backoff,
+            on_giveup=self._on_giveup,
+            on_attempt=self._on_attempt,
+            before_sleep=self._before_sleep,
+            retry_error_callback=self._retry_error_callback,
+            raise_on_giveup=self._raise_on_giveup,
+            logger=self._logger,
+            backoff_log_level=self._backoff_log_level,
+            giveup_log_level=self._giveup_log_level,
+            sleep=self._sleep,
             wait_gen_kwargs=self._wait_gen_kwargs or None,
+            before=self._before,
+            after=self._after,
             rate_limit=self._rate_limit,
             attempt_timeout=self._attempt_timeout,
         )
@@ -381,9 +434,27 @@ class RetryingCaller:
         return RetryingCaller(
             self._wait_gen,
             exception=self._exception,
+            predicate=self._predicate,
             max_tries=self._max_tries,
             max_time=self._max_time,
             jitter=self._jitter,
+            giveup=self._giveup,
+            condition=self._condition,
+            stop=self._stop,
+            on_success=self._on_success,
+            on_backoff=self._on_backoff,
+            on_giveup=self._on_giveup,
+            on_attempt=self._on_attempt,
+            before_sleep=self._before_sleep,
+            retry_error_callback=self._retry_error_callback,
+            raise_on_giveup=self._raise_on_giveup,
+            logger=self._logger,
+            backoff_log_level=self._backoff_log_level,
+            giveup_log_level=self._giveup_log_level,
+            sleep=self._sleep,
+            name=self._name,
+            before=self._before,
+            after=self._after,
             rate_limit=self._rate_limit,
             attempt_timeout=self._attempt_timeout,
             **self._wait_gen_kwargs,
@@ -395,24 +466,60 @@ class AsyncRetryingCaller:
         self,
         wait_gen: _WaitGenerator = expo,
         *,
-        exception: type[Exception] | None = None,
-        max_tries: int | None = None,
-        max_time: float | None = None,
+        exception: _MaybeSequence[type[Exception]] | None = None,
+        predicate: _Predicate[Any] = operator.not_,
+        max_tries: _MaybeCallable[int] | None = None,
+        max_time: _MaybeCallable[float] | None = None,
         jitter: _Jitterer | None = full_jitter,
+        giveup: _Predicate[Exception] = lambda e: False,
+        condition: RetryCondition | None = None,
+        stop: Stop | None = None,
+        on_success: _Handler | Iterable[_Handler] | None = None,
+        on_backoff: _Handler | Iterable[_Handler] | None = None,
+        on_giveup: _Handler | Iterable[_Handler] | None = None,
+        on_attempt: _Handler | Iterable[_Handler] | None = None,
+        before_sleep: _Handler | Iterable[_Handler] | None = None,
+        retry_error_callback: Callable[[dict], Any] | None = None,
+        raise_on_giveup: bool = True,
+        logger: _MaybeLogger = "backon",
+        backoff_log_level: int = logging.INFO,
+        giveup_log_level: int = logging.ERROR,
+        sleep: Callable[[float], Any] | None = None,
+        name: str = "",
+        before: _Handler | Iterable[_Handler] | None = None,
+        after: _Handler | Iterable[_Handler] | None = None,
         rate_limit: RateLimiter | None = None,
         attempt_timeout: float | None = None,
         **wait_gen_kwargs: Any,
     ) -> None:
         self._wait_gen = wait_gen
         self._exception = exception
+        self._predicate = predicate
         self._max_tries = max_tries
         self._max_time = max_time
         self._jitter = jitter
+        self._giveup = giveup
+        self._condition = condition
+        self._stop = stop
+        self._on_success = on_success
+        self._on_backoff = on_backoff
+        self._on_giveup = on_giveup
+        self._on_attempt = on_attempt
+        self._before_sleep = before_sleep
+        self._retry_error_callback = retry_error_callback
+        self._raise_on_giveup = raise_on_giveup
+        self._logger = logger
+        self._backoff_log_level = backoff_log_level
+        self._giveup_log_level = giveup_log_level
+        self._sleep = sleep
+        self._name = name
+        self._before = before
+        self._after = after
         self._rate_limit = rate_limit
         self._attempt_timeout = attempt_timeout
         self._wait_gen_kwargs = wait_gen_kwargs
 
-    def on(self, exception: type[Exception]) -> AsyncRetryingCaller:
+    def on(self, exception: _MaybeSequence[type[Exception]]) -> AsyncRetryingCaller:
         new = self.copy()
         new._exception = exception
         return new
@@ -426,11 +533,28 @@ class AsyncRetryingCaller:
         return await _retry_async(
             wrapped,
             self._wait_gen,
+            predicate=self._predicate,
             exception=self._exception,
             max_tries=self._max_tries,
             max_time=self._max_time,
             jitter=self._jitter,
+            giveup=self._giveup,
+            condition=self._condition,
+            stop=self._stop,
+            on_success=self._on_success,
+            on_backoff=self._on_backoff,
+            on_giveup=self._on_giveup,
+            on_attempt=self._on_attempt,
+            before_sleep=self._before_sleep,
+            retry_error_callback=self._retry_error_callback,
+            raise_on_giveup=self._raise_on_giveup,
+            logger=self._logger,
+            backoff_log_level=self._backoff_log_level,
+            giveup_log_level=self._giveup_log_level,
+            sleep=self._sleep,
             wait_gen_kwargs=self._wait_gen_kwargs or None,
+            before=self._before,
+            after=self._after,
             rate_limit=self._rate_limit,
             attempt_timeout=self._attempt_timeout,
         )
@@ -439,9 +563,27 @@ class AsyncRetryingCaller:
         return AsyncRetryingCaller(
             self._wait_gen,
             exception=self._exception,
+            predicate=self._predicate,
             max_tries=self._max_tries,
             max_time=self._max_time,
             jitter=self._jitter,
+            giveup=self._giveup,
+            condition=self._condition,
+            stop=self._stop,
+            on_success=self._on_success,
+            on_backoff=self._on_backoff,
+            on_giveup=self._on_giveup,
+            on_attempt=self._on_attempt,
+            before_sleep=self._before_sleep,
+            retry_error_callback=self._retry_error_callback,
+            raise_on_giveup=self._raise_on_giveup,
+            logger=self._logger,
+            backoff_log_level=self._backoff_log_level,
+            giveup_log_level=self._giveup_log_level,
+            sleep=self._sleep,
+            name=self._name,
+            before=self._before,
+            after=self._after,
             rate_limit=self._rate_limit,
             attempt_timeout=self._attempt_timeout,
             **self._wait_gen_kwargs,

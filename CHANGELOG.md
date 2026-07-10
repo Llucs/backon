@@ -1,3 +1,8 @@
+## 4.2.0 - 2026-07-10
+
+- `RetryingCaller` and `AsyncRetryingCaller` now accept and forward the full set of retry options (#20). Previously they silently dropped `giveup`, `predicate`, `condition`, `stop`, the `on_*` handlers, `retry_error_callback`, `raise_on_giveup`, `logger`, `before`/`after`, and `name`. The Dynamic Backoff feature (giveup predicate / float return) and the Handlers API are now reachable through the callable caller surface, consistent with `Retrying`, `retry()`, and the decorators.
+- Add `TestCallerForwardsFullOptions` (12 tests) to `tests/test_retrying_caller.py` covering giveup, predicate-based retry, on_attempt / on_giveup handlers, condition / stop composition objects, retry_error_callback, raise_on_giveup, copy preservation, and the async twins.
+
 ## 4.1.5 - 2026-07-10
 
 - Fix `assert_retried()` / `assert_not_retried()` ignoring their `fn` argument (#22). Both helpers now wrap the user-supplied `fn` in a counting spy, drive it through `on_exception`, and assert the spy was invoked exactly `expected_tries` (resp. exactly 1) times. `assert_retried` failing when `fn` does not actually raise is now detectable instead of silently passing.

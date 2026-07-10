@@ -294,7 +294,7 @@ async with backon.Retrying(backon.constant, exception=ValueError, max_tries=3, i
 
 #### `backon.RetryingCaller(wait_gen, ...)`
 
-A callable object with pre-bound exception type via `.on()`.
+A callable object with pre-bound exception type via `.on()`. Accepts the same configuration options as `Retrying` (`giveup`, `predicate`, `condition`, `stop`, the `on_*` handlers, `retry_error_callback`, `raise_on_giveup`, `logger`, `before`/`after`, etc.), forwarding them to the underlying retry loop on every call.
 
 ```python
 caller = backon.RetryingCaller(backon.expo, max_tries=3)
@@ -305,7 +305,7 @@ result = caller(my_function, arg1, arg2)
 
 #### `backon.AsyncRetryingCaller(wait_gen, ...)`
 
-Async variant of `RetryingCaller`.
+Async variant of `RetryingCaller` — same configuration surface, async dispatch.
 
 ```python
 caller = backon.AsyncRetryingCaller(backon.expo, max_tries=3).on(ValueError)

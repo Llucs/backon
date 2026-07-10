@@ -51,6 +51,10 @@ def _decide_outcome(
                 seconds = _next_wait(wait, exc, jitter, state.elapsed, max_time)
             except StopIteration:
                 return (_RetryAction.GIVEUP, None, details, False, True)
+            if state.outcome is not None:
+                state.outcome.wait = seconds
+            if stop(state):
+                return (_RetryAction.GIVEUP, None, details, True, True)
             call_state.upcoming_sleep = seconds
             details["wait"] = seconds
             call_state.idle_for = call_state.idle_for + seconds
@@ -59,22 +63,29 @@ def _decide_outcome(
         _condition_result = condition(state)
         if _is_custom_wait(_condition_result):
             seconds = float(_condition_result)
+            if state.outcome is not None:
+                state.outcome.wait = seconds
             if stop(state):
                 return (_RetryAction.GIVEUP, None, details, True, True)
+            call_state.upcoming_sleep = seconds
+            details["wait"] = seconds
+            call_state.idle_for = call_state.idle_for + seconds
+            return (_RetryAction.RETRY, seconds, details, True, False)
         elif _condition_result:
-            if stop(state):
-                return (_RetryAction.GIVEUP, None, details, True, True)
             try:
                 seconds = _next_wait(wait, exc, jitter, state.elapsed, max_time)
             except StopIteration:
                 return (_RetryAction.GIVEUP, None, details, False, True)
+            if state.outcome is not None:
+                state.outcome.wait = seconds
+            if stop(state):
+                return (_RetryAction.GIVEUP, None, details, True, True)
+            call_state.upcoming_sleep = seconds
+            details["wait"] = seconds
+            call_state.idle_for = call_state.idle_for + seconds
+            return (_RetryAction.RETRY, seconds, details, True, False)
         else:
             return (_RetryAction.GIVEUP, None, details, True, False)
-
-        call_state.upcoming_sleep = seconds
-        details["wait"] = seconds
-        call_state.idle_for = call_state.idle_for + seconds
-        return (_RetryAction.RETRY, seconds, details, True, False)
 
     else:
         if ret is not None:
@@ -83,6 +94,8 @@ def _decide_outcome(
         _condition_result = condition(state)
         if _is_custom_wait(_condition_result):
             seconds = float(_condition_result)
+            if state.outcome is not None:
+                state.outcome.wait = seconds
             if stop(state):
                 return (_RetryAction.GIVEUP, None, details, True, False)
             call_state.upcoming_sleep = seconds
@@ -90,11 +103,13 @@ def _decide_outcome(
             call_state.idle_for = call_state.idle_for + seconds
             return (_RetryAction.RETRY, seconds, details, True, False)
         elif _condition_result:
-            if stop(state):
-                return (_RetryAction.GIVEUP, None, details, True, False)
             try:
                 seconds = _next_wait(wait, ret, jitter, state.elapsed, max_time)
             except StopIteration:
+                return (_RetryAction.GIVEUP, None, details, True, False)
+            if state.outcome is not None:
+                state.outcome.wait = seconds
+            if stop(state):
                 return (_RetryAction.GIVEUP, None, details, True, False)
             call_state.upcoming_sleep = seconds
             details["wait"] = seconds

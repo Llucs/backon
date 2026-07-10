@@ -165,6 +165,8 @@ async with backon.Retrying(backon.constant, exception=ValueError, max_tries=3, i
     result = await r.async_call(fetch_data)
 ```
 
+The `with` / `async with` block is purely a scoping device: it returns the `Retrying` object so you can call `r.call(...)` / `await r.async_call(...)`, which drives the retry loop. `__exit__` / `__aexit__` do not re-raise the final exception or otherwise interact with the loop — that happens inside `r.call` / `r.async_call`. Use `r.statistics` after the call if you need attempt counts. The same applies to `BreakerRetrying` and `HedgingRetrying` context managers.
+
 ---
 
 ## API Reference
@@ -366,7 +368,7 @@ Stop conditions determine when retry should cease. They can be composed with `|`
 |---|---|
 | `stop_after_attempt(max_attempts)` | Stop after N attempts |
 | `stop_after_delay(max_delay)` | Stop after total elapsed time exceeds `max_delay` seconds |
-| `stop_before_delay(max_delay)` | Stop if the *next* wait would exceed `max_delay` |
+| `stop_before_delay(max_delay)` | Stop if the upcoming wait would make `elapsed + wait >= max_delay` |
 | `stop_all(*stops)` | Stop when all sub-conditions are met |
 | `stop_any(*stops)` | Stop when any sub-condition is met |
 | `stop_never()` | Never stop (retry indefinitely) |
@@ -569,7 +571,7 @@ def fetch():
     ...
 ```
 
-`RateLimitError` is raised when the rate limit is exceeded outside of retry context.
+`RateLimitError` is raised only by direct `RateLimiter.__call__` / `RateLimiter.acquire` usage. Inside a retry loop (`rate_limit=...`), exceeding the limit just throttles — the loop sleeps for the computed backoff before the next attempt, and `RateLimitError` is never raised.
 
 ### TryAgain
 
@@ -801,6 +803,8 @@ backon is a near-drop-in replacement. Change your imports:
 - @backoff.on_exception(backoff.expo, ValueError, max_tries=3)
 + @backon.on_exception(backon.expo, ValueError, max_tries=3)
 ```
+
+Note: `backoff.__version__` was a static string. `backon.__version__` is read from `importlib.metadata` (so `pip install backon` is required for the real value); running only from a source checkout returns `"0.0.0"`. (Use `pip install -e .` for editable installs.)
 
 Key differences:
 

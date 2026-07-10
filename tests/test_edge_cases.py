@@ -122,6 +122,69 @@ class TestConditionsEdgeCases:
         s = stop_before_delay(1.0)
         assert s(state) is False
 
+    def test_stop_before_delay_actually_stops_retry_loop(self):
+        attempts = []
+        waits = []
+
+        def f():
+            attempts.append(1)
+            raise ValueError()
+
+        real_sleep = time.sleep
+
+        def fake_sleep(seconds):
+            waits.append(seconds)
+            real_sleep(seconds)
+
+        try:
+            backon.retry(
+                f,
+                wait_incrementing,
+                exception=ValueError,
+                max_tries=20,
+                start=0.05,
+                increment=0.05,
+                jitter=None,
+                logger=None,
+                sleep=fake_sleep,
+                stop=backon.stop_before_delay(0.3),
+            )
+        except ValueError:
+            pass
+        assert len(attempts) >= 3
+        assert len(attempts) <= 4
+        assert sum(waits) < 0.31
+
+    def test_stop_before_delay_predicate_based_actually_stops(self):
+        attempts = []
+        waits = []
+
+        def f():
+            attempts.append(1)
+            return None
+
+        real_sleep = time.sleep
+
+        def fake_sleep(seconds):
+            waits.append(seconds)
+            real_sleep(seconds)
+
+        backon.retry(
+            f,
+            wait_incrementing,
+            predicate=lambda r: True,
+            max_tries=20,
+            start=0.05,
+            increment=0.05,
+            jitter=None,
+            logger=None,
+            sleep=fake_sleep,
+            stop=backon.stop_before_delay(0.3),
+        )
+        assert len(attempts) >= 3
+        assert len(attempts) <= 4
+        assert sum(waits) < 0.31
+
     def test_stop_when_event_set(self):
         event = threading.Event()
         s = stop_when_event_set(event)

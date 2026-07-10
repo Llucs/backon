@@ -1,3 +1,7 @@
+## 4.2.1 - 2026-07-10
+
+- Documentation: replace private-module imports in README examples with the public API (#21). The Circuit Breaker, Hedging, Metrics, Testing Utilities, and auto-detection snippets now use `from backon import ...` for symbols already in `__all__`. The `_auto_detect_collector` private helper was replaced with `backon.get_metrics_collector()`. The Trio section and migration table now explicitly document `backon._trio` as the deliberately private, optional-dependency surface (trio helpers are intentionally not re-exported).
+
 ## 4.2.0 - 2026-07-10
 
 - `RetryingCaller` and `AsyncRetryingCaller` now accept and forward the full set of retry options (#20). Previously they silently dropped `giveup`, `predicate`, `condition`, `stop`, the `on_*` handlers, `retry_error_callback`, `raise_on_giveup`, `logger`, `before`/`after`, and `name`. The Dynamic Backoff feature (giveup predicate / float return) and the Handlers API are now reachable through the callable caller surface, consistent with `Retrying`, `retry()`, and the decorators.

@@ -592,7 +592,7 @@ def fetch():
 Circuit breaker with three states: CLOSED (normal), OPEN (failing), HALF_OPEN (testing recovery).
 
 ```python
-from backon._circuit_breaker import CircuitBreaker, BreakerRetrying, CircuitOpenError
+from backon import CircuitBreaker, BreakerRetrying, CircuitOpenError
 
 breaker = BreakerRetrying(
     backon.expo, max_tries=3,
@@ -621,13 +621,13 @@ except CircuitOpenError:
 Run multiple retry attempts concurrently and return the first success.
 
 ```python
-from backon._hedging import hedge, HedgingRetrying
+from backon import hedge, HedgingRetrying, on_hedge
 
 # Functional
 result = hedge(fetch, backon.expo, max_hedge=3)
 
 # Decorator
-@backon.on_hedge(backon.expo, max_hedge=3)
+@on_hedge(backon.expo, max_hedge=3)
 def fetch():
     ...
 
@@ -647,7 +647,7 @@ with HedgingRetrying(backon.expo, max_hedge=3) as h:
 Optional Prometheus, OpenTelemetry, and structlog metrics. Each requires its corresponding package to be installed.
 
 ```python
-from backon._instrumentation import PrometheusMetrics, OTelMetrics, StructlogMetrics, set_metrics_collector
+from backon import PrometheusMetrics, OTelMetrics, StructlogMetrics, set_metrics_collector
 
 # Prometheus
 set_metrics_collector(PrometheusMetrics())
@@ -659,11 +659,12 @@ set_metrics_collector(OTelMetrics(meter_name="myapp.backon"))
 set_metrics_collector(StructlogMetrics())
 ```
 
-Auto-detection (first available: prometheus_client > structlog > no-op):
+Auto-detection runs at import time (first available: prometheus_client > structlog > no-op); the active collector is queryable via `backon.get_metrics_collector()`:
 
 ```python
-from backon._instrumentation import _auto_detect_collector
-set_metrics_collector(_auto_detect_collector())
+import backon
+
+print(backon.get_metrics_collector())
 ```
 
 Metrics collected:
@@ -677,7 +678,7 @@ Metrics collected:
 ### Testing Utilities
 
 ```python
-from backon._testing import (
+from backon import (
     disable_retries, enable_retries,
     test_config, limit_retries, remove_backoff,
     assert_retried, assert_not_retried,
@@ -701,7 +702,7 @@ assert_retried(fetch, expected_tries=3)
 
 ### Trio Support
 
-Retry with the trio async framework:
+Retry with the trio async framework. The trio helpers live in the `backon._trio` module: the `trio` package is an optional dependency, so the trio helpers are deliberately not part of the top-level `backon` namespace and must be imported explicitly.
 
 ```python
 from backon._trio import retry_exception, retry_predicate
@@ -817,7 +818,7 @@ Key differences:
 | Metrics | Not supported | Prometheus / OTel |
 | Wait generator composition | Not supported | `+` operator |
 | Stop / RetryCondition composition | Not supported | `\|` / `&` operators |
-| Trio | Not supported | import from `backon._trio` |
+| Trio | Not supported | `backon._trio` (deliberately private, optional dep) |
 | Iterator API | Not supported | `for attempt in Retrying():` |
 | Build system | Poetry | PDM (PEP 621) |
 

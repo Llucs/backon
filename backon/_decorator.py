@@ -282,63 +282,64 @@ def on_predicate(
                 wait_gen_kwargs,
             )
             return cast(Callable[P, R], wrapper)
-        _sleep = sleep or time_module.sleep
+        else:  # noqa: RET505
+            _sleep = sleep or time_module.sleep
 
-        @functools.wraps(target)
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            if not is_enabled():
-                return cast(R, target(*args, **kwargs))
+            @functools.wraps(target)
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                if not is_enabled():
+                    return cast(R, target(*args, **kwargs))
 
-            return cast(
-                R,
-                _retry_sync_inner(
-                    lambda: target(*args, **kwargs),
-                    wait_gen,
-                    condition=condition,
-                    max_tries=_maybe_call(max_tries),
-                    max_time=_maybe_call(max_time),
-                    jitter=jitter,
-                    on_success=on_success,
-                    on_backoff=on_backoff,
-                    on_giveup=on_giveup,
-                    on_attempt=on_attempt,
-                    before_sleep=before_sleep,
-                    sleep=_sleep,
-                    retry_error_callback=retry_error_callback,
-                    raise_on_giveup=raise_on_giveup,
-                    wait_gen_kwargs=wait_gen_kwargs,
-                    before=before,
-                    after=after,
-                    rate_limit=rate_limit,
-                    attempt_timeout=attempt_timeout,
-                ),
+                return cast(
+                    R,
+                    _retry_sync_inner(
+                        lambda: target(*args, **kwargs),
+                        wait_gen,
+                        condition=condition,
+                        max_tries=_maybe_call(max_tries),
+                        max_time=_maybe_call(max_time),
+                        jitter=jitter,
+                        on_success=on_success,
+                        on_backoff=on_backoff,
+                        on_giveup=on_giveup,
+                        on_attempt=on_attempt,
+                        before_sleep=before_sleep,
+                        sleep=_sleep,
+                        retry_error_callback=retry_error_callback,
+                        raise_on_giveup=raise_on_giveup,
+                        wait_gen_kwargs=wait_gen_kwargs,
+                        before=before,
+                        after=after,
+                        rate_limit=rate_limit,
+                        attempt_timeout=attempt_timeout,
+                    ),
+                )
+
+            wrapper.retry_with = _make_retry_with_predicate(  # type: ignore[attr-defined]
+                target,
+                wait_gen,
+                predicate,
+                max_tries,
+                max_time,
+                jitter,
+                _r_on_success,
+                _r_on_backoff,
+                _r_on_giveup,
+                _r_on_attempt,
+                _r_before_sleep,
+                _r_logger,
+                backoff_log_level,
+                giveup_log_level,
+                retry_error_callback,
+                raise_on_giveup,
+                sleep,
+                _r_before,
+                _r_after,
+                rate_limit,
+                attempt_timeout,
+                wait_gen_kwargs,
             )
-
-        wrapper.retry_with = _make_retry_with_predicate(  # type: ignore[attr-defined]
-            target,
-            wait_gen,
-            predicate,
-            max_tries,
-            max_time,
-            jitter,
-            _r_on_success,
-            _r_on_backoff,
-            _r_on_giveup,
-            _r_on_attempt,
-            _r_before_sleep,
-            _r_logger,
-            backoff_log_level,
-            giveup_log_level,
-            retry_error_callback,
-            raise_on_giveup,
-            sleep,
-            _r_before,
-            _r_after,
-            rate_limit,
-            attempt_timeout,
-            wait_gen_kwargs,
-        )
-        return cast(Callable[P, R], wrapper)
+            return cast(Callable[P, R], wrapper)
 
     return decorate
 
@@ -610,64 +611,65 @@ def on_exception(
                 wait_gen_kwargs,
             )
             return cast(Callable[P, R], wrapper)
-        _sleep = sleep or time_module.sleep
+        else:  # noqa: RET505
+            _sleep = sleep or time_module.sleep
 
-        @functools.wraps(target)
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            if not is_enabled():
-                return cast(R, target(*args, **kwargs))
+            @functools.wraps(target)
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                if not is_enabled():
+                    return cast(R, target(*args, **kwargs))
 
-            return cast(
-                R,
-                _retry_sync_inner(
-                    lambda: target(*args, **kwargs),
-                    wait_gen,
-                    condition=condition,
-                    max_tries=_maybe_call(max_tries),
-                    max_time=_maybe_call(max_time),
-                    jitter=jitter,
-                    on_success=on_success,
-                    on_backoff=on_backoff,
-                    on_giveup=on_giveup,
-                    on_attempt=on_attempt,
-                    before_sleep=before_sleep,
-                    sleep=_sleep,
-                    retry_error_callback=retry_error_callback,
-                    raise_on_giveup=raise_on_giveup,
-                    wait_gen_kwargs=wait_gen_kwargs,
-                    before=before,
-                    after=after,
-                    rate_limit=rate_limit,
-                    attempt_timeout=attempt_timeout,
-                ),
+                return cast(
+                    R,
+                    _retry_sync_inner(
+                        lambda: target(*args, **kwargs),
+                        wait_gen,
+                        condition=condition,
+                        max_tries=_maybe_call(max_tries),
+                        max_time=_maybe_call(max_time),
+                        jitter=jitter,
+                        on_success=on_success,
+                        on_backoff=on_backoff,
+                        on_giveup=on_giveup,
+                        on_attempt=on_attempt,
+                        before_sleep=before_sleep,
+                        sleep=_sleep,
+                        retry_error_callback=retry_error_callback,
+                        raise_on_giveup=raise_on_giveup,
+                        wait_gen_kwargs=wait_gen_kwargs,
+                        before=before,
+                        after=after,
+                        rate_limit=rate_limit,
+                        attempt_timeout=attempt_timeout,
+                    ),
+                )
+
+            wrapper.retry_with = _make_retry_with_exception(  # type: ignore[attr-defined]
+                target,
+                wait_gen,
+                exception,
+                max_tries,
+                max_time,
+                jitter,
+                giveup,
+                _r_on_success,
+                _r_on_backoff,
+                _r_on_giveup,
+                _r_on_attempt,
+                _r_before_sleep,
+                _r_logger,
+                backoff_log_level,
+                giveup_log_level,
+                retry_error_callback,
+                raise_on_giveup,
+                sleep,
+                _r_before,
+                _r_after,
+                rate_limit,
+                attempt_timeout,
+                wait_gen_kwargs,
             )
-
-        wrapper.retry_with = _make_retry_with_exception(  # type: ignore[attr-defined]
-            target,
-            wait_gen,
-            exception,
-            max_tries,
-            max_time,
-            jitter,
-            giveup,
-            _r_on_success,
-            _r_on_backoff,
-            _r_on_giveup,
-            _r_on_attempt,
-            _r_before_sleep,
-            _r_logger,
-            backoff_log_level,
-            giveup_log_level,
-            retry_error_callback,
-            raise_on_giveup,
-            sleep,
-            _r_before,
-            _r_after,
-            rate_limit,
-            attempt_timeout,
-            wait_gen_kwargs,
-        )
-        return cast(Callable[P, R], wrapper)
+            return cast(Callable[P, R], wrapper)
 
     return decorate
 

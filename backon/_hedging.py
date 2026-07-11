@@ -126,7 +126,7 @@ def _hedge_sync(
             futures.add(fut)
 
         for handler in on_hedge_list:
-            handler({"max_hedge": max_hedge, "target": target, "hedge_count": _i + 1})
+            handler({"max_hedge": max_hedge, "target": target, "hedge_count": _i + 1})  # type: ignore[typeddict-item, typeddict-unknown-key]
 
         done, not_done = futures_wait(
             futures,
@@ -191,7 +191,7 @@ async def _hedge_async(
     tasks = [asyncio.create_task(run_hedge()) for _ in range(max_hedge)]
 
     for handler in on_hedge_list:
-        handler({"max_hedge": max_hedge, "target": target, "hedge_count": len(tasks)})
+        handler({"max_hedge": max_hedge, "target": target, "hedge_count": len(tasks)})  # type: ignore[typeddict-item, typeddict-unknown-key]
 
     done, pending = await asyncio.wait(
         tasks,
@@ -250,27 +250,28 @@ def on_hedge(
                 )
 
             return cast(Callable[P, R], wrapper)
+        else:  # noqa: RET505
 
-        @functools.wraps(target)
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            return cast(
-                R,
-                _hedge_sync(
-                    _make_hedge_target(target, args, kwargs),
-                    wait_gen,
-                    max_hedge=max_hedge,
-                    exception=exception,
-                    max_tries=max_tries,
-                    max_time=max_time,
-                    jitter=jitter,
-                    on_hedge=on_hedge,
-                    timeout=timeout,
-                    predicate=operator.not_,
-                    **wait_gen_kwargs,
-                ),
-            )
+            @functools.wraps(target)
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                return cast(
+                    R,
+                    _hedge_sync(
+                        _make_hedge_target(target, args, kwargs),
+                        wait_gen,
+                        max_hedge=max_hedge,
+                        exception=exception,
+                        max_tries=max_tries,
+                        max_time=max_time,
+                        jitter=jitter,
+                        on_hedge=on_hedge,
+                        timeout=timeout,
+                        predicate=operator.not_,
+                        **wait_gen_kwargs,
+                    ),
+                )
 
-        return cast(Callable[P, R], wrapper)
+            return cast(Callable[P, R], wrapper)
 
     return decorate
 

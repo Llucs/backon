@@ -137,7 +137,7 @@
 
 ## 3.3.0 - 2026-06-28
 
-- Optimize performance: 7.6x faster than tenacity and backoff in retry benchmarks
+- ~~Optimize performance: 7.6x faster than tenacity and backoff in retry benchmarks~~
 - Replace expensive `traceback.format_exception_only()` with direct `str(exc)` formatting in log handlers
 - Remove double handler configuration in decorator path (was calling handlers twice)
 - Skip `time.sleep(0)` when wait time is zero

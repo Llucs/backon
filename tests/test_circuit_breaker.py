@@ -1,3 +1,4 @@
+import contextlib
 import threading
 import time
 
@@ -261,9 +262,8 @@ class TestCircuitBreakerContextManager:
         cb.record_failure()
         assert cb.state == CircuitBreakerState.OPEN
 
-        with cb:
-            with pytest.raises(CircuitOpenError):
-                cb.call(lambda: 42)
+        with cb, pytest.raises(CircuitOpenError):
+            cb.call(lambda: 42)
 
     @pytest.mark.asyncio
     async def test_async_context_manager(self):
@@ -386,10 +386,8 @@ class TestCircuitBreakerThreadSafety:
 
         def worker():
             for _ in range(10):
-                try:
+                with contextlib.suppress(ValueError, CircuitOpenError):
                     cb.call(conditional)
-                except (ValueError, CircuitOpenError):
-                    pass
 
         threads = [threading.Thread(target=worker) for _ in range(4)]
         for t in threads:

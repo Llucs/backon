@@ -68,7 +68,7 @@ class TestRetryWith:
         @backon.on_predicate(backon.constant, max_tries=5, interval=0, jitter=None)
         def f():
             calls.append(1)
-            return None
+            return
 
         wrapped = f.retry_with(max_tries=2)
         result = wrapped()

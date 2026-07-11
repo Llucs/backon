@@ -1,3 +1,4 @@
+import contextlib
 import threading
 import time
 
@@ -136,7 +137,7 @@ class TestConditionsEdgeCases:
             waits.append(seconds)
             real_sleep(seconds)
 
-        try:
+        with contextlib.suppress(ValueError):
             backon.retry(
                 f,
                 wait_incrementing,
@@ -149,8 +150,6 @@ class TestConditionsEdgeCases:
                 sleep=fake_sleep,
                 stop=backon.stop_before_delay(0.3),
             )
-        except ValueError:
-            pass
         assert len(attempts) >= 3
         assert len(attempts) <= 4
         assert sum(waits) < 0.31
@@ -161,7 +160,7 @@ class TestConditionsEdgeCases:
 
         def f():
             attempts.append(1)
-            return None
+            return
 
         real_sleep = time.sleep
 
@@ -657,7 +656,7 @@ class TestDecoratorEdgeCases:
         @backon.on_predicate(backon.expo, max_tries=5, jitter=None)
         def f():
             calls.append(1)
-            return None
+            return
 
         f()
         assert len(calls) == 1
@@ -671,7 +670,7 @@ class TestDecoratorEdgeCases:
         @backon.on_predicate(backon.expo, max_tries=5, jitter=None)
         async def f():
             calls.append(1)
-            return None
+            return
 
         await f()
         assert len(calls) == 1

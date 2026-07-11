@@ -53,11 +53,10 @@ def _retry_loop_sync(
     wait = _init_wait_gen(wait_gen, wait_gen_kwargs)
 
     while True:
-        if rate_limit is not None:
-            if not rate_limit.acquire():
-                wt = rate_limit.wait_time()
-                _check_hot_loop()
-                sleep(wt)
+        if rate_limit is not None and not rate_limit.acquire():
+            wt = rate_limit.wait_time()
+            _check_hot_loop()
+            sleep(wt)
         state.tries += 1
         state.elapsed = _now() - start_time
         call_state.attempt_number = state.tries
@@ -204,11 +203,10 @@ async def _retry_loop_async(
     wait = _init_wait_gen(wait_gen, wait_gen_kwargs)
 
     while True:
-        if rate_limit is not None:
-            if not rate_limit.acquire():
-                wt = rate_limit.wait_time()
-                _check_hot_loop()
-                await sleep(wt)
+        if rate_limit is not None and not rate_limit.acquire():
+            wt = rate_limit.wait_time()
+            _check_hot_loop()
+            await sleep(wt)
         state.tries += 1
         state.elapsed = _now() - start_time
         call_state.attempt_number = state.tries

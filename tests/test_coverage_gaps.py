@@ -38,7 +38,7 @@ from backon._wait_gen import (
     constant,
 )
 
-_KW = dict(jitter=None, interval=0.01)
+_KW = {"jitter": None, "interval": 0.01}
 
 
 class _FiniteWait(_Wait):
@@ -234,7 +234,7 @@ class TestDecideOutcomeEdgeCases:
         )
         wait = _FiniteWait()
         wait.next()
-        action, seconds, details, use_cb, suppress = _decide_outcome(
+        action, _seconds, _details, _use_cb, _suppress = _decide_outcome(
             state,
             call_state,
             wait,
@@ -259,7 +259,7 @@ class TestDecideOutcomeEdgeCases:
         stop = _make_default_stop(max_tries=10, max_time=None)
         wait = _FiniteWait()
         wait.next()
-        action, seconds, details, use_cb, suppress = _decide_outcome(
+        action, _seconds, _details, _use_cb, _suppress = _decide_outcome(
             state,
             call_state,
             wait,
@@ -286,7 +286,7 @@ class TestDecideOutcomeEdgeCases:
         stop = _make_default_stop(max_tries=2, max_time=None)
         wait = constant(interval=0.01)
         wait.next()
-        action, seconds, details, use_cb, suppress = _decide_outcome(
+        action, _seconds, _details, _use_cb, _suppress = _decide_outcome(
             state,
             call_state,
             wait,
@@ -311,7 +311,7 @@ class TestDecideOutcomeEdgeCases:
         stop = _make_default_stop(max_tries=10, max_time=None)
         wait = _FiniteWait()
         wait.next()
-        action, seconds, details, use_cb, suppress = _decide_outcome(
+        action, _seconds, _details, _use_cb, _suppress = _decide_outcome(
             state,
             call_state,
             wait,

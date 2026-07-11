@@ -26,7 +26,7 @@ class _FastOutcome:
 
 
 class _FastState:
-    __slots__ = ("tries", "elapsed", "outcome")
+    __slots__ = ("elapsed", "outcome", "tries")
 
     def __init__(self):
         self.tries = 0
@@ -72,9 +72,7 @@ def _is_fast_path(
         return False
     if rate_limit is not None:
         return False
-    if attempt_timeout is not None:
-        return False
-    return True
+    return attempt_timeout is None
 
 
 def _retry_fast_sync(

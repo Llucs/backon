@@ -1,3 +1,5 @@
+import contextlib
+
 import backon
 from backon._wait_gen import wait_combine
 
@@ -103,10 +105,8 @@ class TestPreconfiguredKwargsPreserved:
         def f():
             raise ValueError()
 
-        try:
+        with contextlib.suppress(ValueError):
             f()
-        except ValueError:
-            pass
         assert waits == [0.30000000000000004, 0.30000000000000004]
 
     def test_plus_in_decorator_uses_preconfigured(self):
@@ -123,10 +123,8 @@ class TestPreconfiguredKwargsPreserved:
         def f():
             raise ValueError()
 
-        try:
+        with contextlib.suppress(ValueError):
             f()
-        except ValueError:
-            pass
         assert waits == [1.5, 3.5]
 
     def test_chain_in_decorator_uses_preconfigured(self):
@@ -145,10 +143,8 @@ class TestPreconfiguredKwargsPreserved:
         def f():
             raise ValueError()
 
-        try:
+        with contextlib.suppress(ValueError):
             f()
-        except ValueError:
-            pass
         assert waits == [0.1, 0.2, 0.1]
 
     def test_call_kwargs_override_preconfigured(self):

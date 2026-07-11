@@ -8,7 +8,7 @@ class TestOnPredicate:
         @backon.on_predicate(backon.constant, jitter=None, interval=0.01, max_tries=3)
         def f():
             calls.append(1)
-            return None
+            return
 
         assert f() is None
         assert len(calls) == 3

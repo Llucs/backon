@@ -194,7 +194,7 @@ class TestHedgeEdgeCases:
 
         def target():
             calls.append(1)
-            return None
+            return
 
         result = hedge(
             target,

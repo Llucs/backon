@@ -13,7 +13,7 @@ from backon._common import (
 from backon._state import AttemptTimeoutError
 
 try:
-    import trio  # noqa: F401
+    import trio
 
     _trio_available = True
 except ImportError:

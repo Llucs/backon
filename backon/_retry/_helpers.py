@@ -30,10 +30,7 @@ def _make_default_stop(max_tries, max_time):
 
 def _make_default_condition(exception, giveup, predicate):
     if exception is not None:
-        if isinstance(exception, type):
-            exc_types = (exception,)
-        else:
-            exc_types = tuple(exception)
+        exc_types = (exception,) if isinstance(exception, type) else tuple(exception)
 
         condition = retry_if_exception_type(exc_types)
 
@@ -53,13 +50,12 @@ def _make_default_condition(exception, giveup, predicate):
 
             condition = wrapped
         return condition
-    else:
 
-        def pred_condition(state):
-            if state.outcome is None:
-                return False
-            if state.outcome.exception is not None:
-                return False
-            return predicate(state.outcome.value)
+    def pred_condition(state):
+        if state.outcome is None:
+            return False
+        if state.outcome.exception is not None:
+            return False
+        return predicate(state.outcome.value)
 
-        return pred_condition
+    return pred_condition

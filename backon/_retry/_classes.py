@@ -247,7 +247,7 @@ class Retrying:
 
         _holder: dict = {}
         try:
-            result = _retry_sync(
+            return _retry_sync(
                 wrapped,
                 self._wait_gen,
                 predicate=self._predicate,
@@ -276,7 +276,6 @@ class Retrying:
                 rate_limit=self._rate_limit,
                 attempt_timeout=self._attempt_timeout,
             )
-            return result
         finally:
             self._state = _holder.get("state")
             self._call_state = _holder.get("call_state")
@@ -289,7 +288,7 @@ class Retrying:
 
         _holder: dict = {}
         try:
-            result = await _retry_async(
+            return await _retry_async(
                 wrapped,
                 self._wait_gen,
                 predicate=self._predicate,
@@ -318,7 +317,6 @@ class Retrying:
                 rate_limit=self._rate_limit,
                 attempt_timeout=self._attempt_timeout,
             )
-            return result
         finally:
             self._state = _holder.get("state")
             self._call_state = _holder.get("call_state")

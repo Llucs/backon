@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import time
 
 import pytest
@@ -42,10 +43,8 @@ class TestAttemptTimeoutSync:
             time.sleep(0.5)
             return "ok"
 
-        try:
+        with contextlib.suppress(Exception):
             f()
-        except Exception:
-            pass
         assert len(rl) == 3
 
     def test_timeout_with_retry_functional(self):
@@ -56,7 +55,7 @@ class TestAttemptTimeoutSync:
             time.sleep(0.5)
             return "ok"
 
-        try:
+        with contextlib.suppress(Exception):
             backon.retry(
                 f,
                 backon.expo,
@@ -64,8 +63,6 @@ class TestAttemptTimeoutSync:
                 jitter=None,
                 attempt_timeout=0.01,
             )
-        except Exception:
-            pass
         assert len(rl) == 3
 
     def test_timeout_with_retrying_call(self):
@@ -82,10 +79,8 @@ class TestAttemptTimeoutSync:
             jitter=None,
             attempt_timeout=0.01,
         )
-        try:
+        with contextlib.suppress(Exception):
             r.call(f)
-        except Exception:
-            pass
         assert len(rl) == 3
 
     def test_timeout_with_retrying_caller(self):
@@ -102,10 +97,8 @@ class TestAttemptTimeoutSync:
             jitter=None,
             attempt_timeout=0.01,
         )
-        try:
+        with contextlib.suppress(Exception):
             caller(f)
-        except Exception:
-            pass
         assert len(rl) == 3
 
 
@@ -144,10 +137,8 @@ class TestAttemptTimeoutAsync:
             await asyncio.sleep(0.5)
             return "ok"
 
-        try:
+        with contextlib.suppress(Exception):
             await f()
-        except Exception:
-            pass
         assert len(rl) == 3
 
     @pytest.mark.asyncio
@@ -159,7 +150,7 @@ class TestAttemptTimeoutAsync:
             await asyncio.sleep(0.5)
             return "ok"
 
-        try:
+        with contextlib.suppress(Exception):
             await backon.retry(
                 f,
                 backon.expo,
@@ -167,8 +158,6 @@ class TestAttemptTimeoutAsync:
                 jitter=None,
                 attempt_timeout=0.01,
             )
-        except Exception:
-            pass
         assert len(rl) == 3
 
     @pytest.mark.asyncio
@@ -186,10 +175,8 @@ class TestAttemptTimeoutAsync:
             jitter=None,
             attempt_timeout=0.01,
         )
-        try:
+        with contextlib.suppress(Exception):
             await r.async_call(f)
-        except Exception:
-            pass
         assert len(rl) == 3
 
     @pytest.mark.asyncio
@@ -207,8 +194,6 @@ class TestAttemptTimeoutAsync:
             jitter=None,
             attempt_timeout=0.01,
         )
-        try:
+        with contextlib.suppress(Exception):
             await caller(f)
-        except Exception:
-            pass
         assert len(rl) == 3

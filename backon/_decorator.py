@@ -282,64 +282,63 @@ def on_predicate(
                 wait_gen_kwargs,
             )
             return cast(Callable[P, R], wrapper)
-        else:
-            _sleep = sleep or time_module.sleep
+        _sleep = sleep or time_module.sleep
 
-            @functools.wraps(target)
-            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-                if not is_enabled():
-                    return cast(R, target(*args, **kwargs))
+        @functools.wraps(target)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            if not is_enabled():
+                return cast(R, target(*args, **kwargs))
 
-                return cast(
-                    R,
-                    _retry_sync_inner(
-                        lambda: target(*args, **kwargs),
-                        wait_gen,
-                        condition=condition,
-                        max_tries=_maybe_call(max_tries),
-                        max_time=_maybe_call(max_time),
-                        jitter=jitter,
-                        on_success=on_success,
-                        on_backoff=on_backoff,
-                        on_giveup=on_giveup,
-                        on_attempt=on_attempt,
-                        before_sleep=before_sleep,
-                        sleep=_sleep,
-                        retry_error_callback=retry_error_callback,
-                        raise_on_giveup=raise_on_giveup,
-                        wait_gen_kwargs=wait_gen_kwargs,
-                        before=before,
-                        after=after,
-                        rate_limit=rate_limit,
-                        attempt_timeout=attempt_timeout,
-                    ),
-                )
-
-            wrapper.retry_with = _make_retry_with_predicate(  # type: ignore[attr-defined]
-                target,
-                wait_gen,
-                predicate,
-                max_tries,
-                max_time,
-                jitter,
-                _r_on_success,
-                _r_on_backoff,
-                _r_on_giveup,
-                _r_on_attempt,
-                _r_before_sleep,
-                _r_logger,
-                backoff_log_level,
-                giveup_log_level,
-                retry_error_callback,
-                raise_on_giveup,
-                sleep,
-                _r_before,
-                _r_after,
-                rate_limit,
-                attempt_timeout,
-                wait_gen_kwargs,
+            return cast(
+                R,
+                _retry_sync_inner(
+                    lambda: target(*args, **kwargs),
+                    wait_gen,
+                    condition=condition,
+                    max_tries=_maybe_call(max_tries),
+                    max_time=_maybe_call(max_time),
+                    jitter=jitter,
+                    on_success=on_success,
+                    on_backoff=on_backoff,
+                    on_giveup=on_giveup,
+                    on_attempt=on_attempt,
+                    before_sleep=before_sleep,
+                    sleep=_sleep,
+                    retry_error_callback=retry_error_callback,
+                    raise_on_giveup=raise_on_giveup,
+                    wait_gen_kwargs=wait_gen_kwargs,
+                    before=before,
+                    after=after,
+                    rate_limit=rate_limit,
+                    attempt_timeout=attempt_timeout,
+                ),
             )
-            return cast(Callable[P, R], wrapper)
+
+        wrapper.retry_with = _make_retry_with_predicate(  # type: ignore[attr-defined]
+            target,
+            wait_gen,
+            predicate,
+            max_tries,
+            max_time,
+            jitter,
+            _r_on_success,
+            _r_on_backoff,
+            _r_on_giveup,
+            _r_on_attempt,
+            _r_before_sleep,
+            _r_logger,
+            backoff_log_level,
+            giveup_log_level,
+            retry_error_callback,
+            raise_on_giveup,
+            sleep,
+            _r_before,
+            _r_after,
+            rate_limit,
+            attempt_timeout,
+            wait_gen_kwargs,
+        )
+        return cast(Callable[P, R], wrapper)
 
     return decorate
 
@@ -402,10 +401,7 @@ def on_exception(
         after = _config_handlers(after)
 
         exc_types: tuple[type[Exception], ...]
-        if isinstance(exception, type):
-            exc_types = (exception,)
-        else:
-            exc_types = tuple(exception)
+        exc_types = (exception,) if isinstance(exception, type) else tuple(exception)
 
         condition: RetryCondition = retry_if_exception_type(exc_types)
         if giveup is not None:
@@ -614,65 +610,64 @@ def on_exception(
                 wait_gen_kwargs,
             )
             return cast(Callable[P, R], wrapper)
-        else:
-            _sleep = sleep or time_module.sleep
+        _sleep = sleep or time_module.sleep
 
-            @functools.wraps(target)
-            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-                if not is_enabled():
-                    return cast(R, target(*args, **kwargs))
+        @functools.wraps(target)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            if not is_enabled():
+                return cast(R, target(*args, **kwargs))
 
-                return cast(
-                    R,
-                    _retry_sync_inner(
-                        lambda: target(*args, **kwargs),
-                        wait_gen,
-                        condition=condition,
-                        max_tries=_maybe_call(max_tries),
-                        max_time=_maybe_call(max_time),
-                        jitter=jitter,
-                        on_success=on_success,
-                        on_backoff=on_backoff,
-                        on_giveup=on_giveup,
-                        on_attempt=on_attempt,
-                        before_sleep=before_sleep,
-                        sleep=_sleep,
-                        retry_error_callback=retry_error_callback,
-                        raise_on_giveup=raise_on_giveup,
-                        wait_gen_kwargs=wait_gen_kwargs,
-                        before=before,
-                        after=after,
-                        rate_limit=rate_limit,
-                        attempt_timeout=attempt_timeout,
-                    ),
-                )
-
-            wrapper.retry_with = _make_retry_with_exception(  # type: ignore[attr-defined]
-                target,
-                wait_gen,
-                exception,
-                max_tries,
-                max_time,
-                jitter,
-                giveup,
-                _r_on_success,
-                _r_on_backoff,
-                _r_on_giveup,
-                _r_on_attempt,
-                _r_before_sleep,
-                _r_logger,
-                backoff_log_level,
-                giveup_log_level,
-                retry_error_callback,
-                raise_on_giveup,
-                sleep,
-                _r_before,
-                _r_after,
-                rate_limit,
-                attempt_timeout,
-                wait_gen_kwargs,
+            return cast(
+                R,
+                _retry_sync_inner(
+                    lambda: target(*args, **kwargs),
+                    wait_gen,
+                    condition=condition,
+                    max_tries=_maybe_call(max_tries),
+                    max_time=_maybe_call(max_time),
+                    jitter=jitter,
+                    on_success=on_success,
+                    on_backoff=on_backoff,
+                    on_giveup=on_giveup,
+                    on_attempt=on_attempt,
+                    before_sleep=before_sleep,
+                    sleep=_sleep,
+                    retry_error_callback=retry_error_callback,
+                    raise_on_giveup=raise_on_giveup,
+                    wait_gen_kwargs=wait_gen_kwargs,
+                    before=before,
+                    after=after,
+                    rate_limit=rate_limit,
+                    attempt_timeout=attempt_timeout,
+                ),
             )
-            return cast(Callable[P, R], wrapper)
+
+        wrapper.retry_with = _make_retry_with_exception(  # type: ignore[attr-defined]
+            target,
+            wait_gen,
+            exception,
+            max_tries,
+            max_time,
+            jitter,
+            giveup,
+            _r_on_success,
+            _r_on_backoff,
+            _r_on_giveup,
+            _r_on_attempt,
+            _r_before_sleep,
+            _r_logger,
+            backoff_log_level,
+            giveup_log_level,
+            retry_error_callback,
+            raise_on_giveup,
+            sleep,
+            _r_before,
+            _r_after,
+            rate_limit,
+            attempt_timeout,
+            wait_gen_kwargs,
+        )
+        return cast(Callable[P, R], wrapper)
 
     return decorate
 
@@ -725,26 +720,26 @@ def _make_retry_with_predicate(
     }
 
     def retry_with(**overrides: Any) -> Callable[P, R]:
-        kw = dict(
-            max_tries=max_tries,
-            max_time=max_time,
-            jitter=jitter,
-            on_success=on_success,
-            on_backoff=on_backoff,
-            on_giveup=on_giveup,
-            on_attempt=on_attempt,
-            before_sleep=before_sleep,
-            logger=logger,
-            backoff_log_level=backoff_log_level,
-            giveup_log_level=giveup_log_level,
-            retry_error_callback=retry_error_callback,
-            raise_on_giveup=raise_on_giveup,
-            sleep=sleep,
-            before=before,
-            after=after,
-            rate_limit=rate_limit,
-            attempt_timeout=attempt_timeout,
-        )
+        kw = {
+            "max_tries": max_tries,
+            "max_time": max_time,
+            "jitter": jitter,
+            "on_success": on_success,
+            "on_backoff": on_backoff,
+            "on_giveup": on_giveup,
+            "on_attempt": on_attempt,
+            "before_sleep": before_sleep,
+            "logger": logger,
+            "backoff_log_level": backoff_log_level,
+            "giveup_log_level": giveup_log_level,
+            "retry_error_callback": retry_error_callback,
+            "raise_on_giveup": raise_on_giveup,
+            "sleep": sleep,
+            "before": before,
+            "after": after,
+            "rate_limit": rate_limit,
+            "attempt_timeout": attempt_timeout,
+        }
         kw.update(overrides)
 
         _wg = kw.pop("wait_gen", wait_gen)
@@ -810,27 +805,27 @@ def _make_retry_with_exception(
     }
 
     def retry_with(**overrides: Any) -> Callable[P, R]:
-        kw = dict(
-            max_tries=max_tries,
-            max_time=max_time,
-            jitter=jitter,
-            giveup=giveup,
-            on_success=on_success,
-            on_backoff=on_backoff,
-            on_giveup=on_giveup,
-            on_attempt=on_attempt,
-            before_sleep=before_sleep,
-            logger=logger,
-            backoff_log_level=backoff_log_level,
-            giveup_log_level=giveup_log_level,
-            retry_error_callback=retry_error_callback,
-            raise_on_giveup=raise_on_giveup,
-            sleep=sleep,
-            before=before,
-            after=after,
-            rate_limit=rate_limit,
-            attempt_timeout=attempt_timeout,
-        )
+        kw = {
+            "max_tries": max_tries,
+            "max_time": max_time,
+            "jitter": jitter,
+            "giveup": giveup,
+            "on_success": on_success,
+            "on_backoff": on_backoff,
+            "on_giveup": on_giveup,
+            "on_attempt": on_attempt,
+            "before_sleep": before_sleep,
+            "logger": logger,
+            "backoff_log_level": backoff_log_level,
+            "giveup_log_level": giveup_log_level,
+            "retry_error_callback": retry_error_callback,
+            "raise_on_giveup": raise_on_giveup,
+            "sleep": sleep,
+            "before": before,
+            "after": after,
+            "rate_limit": rate_limit,
+            "attempt_timeout": attempt_timeout,
+        }
         kw.update(overrides)
 
         _wg = kw.pop("wait_gen", wait_gen)

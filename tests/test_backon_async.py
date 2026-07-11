@@ -165,7 +165,7 @@ class TestAsyncOnPredicate:
         @backon.on_predicate(backon.constant, jitter=None, interval=0.01, max_tries=3)
         async def f():
             calls.append(1)
-            return None
+            return
 
         assert await f() is None
         assert len(calls) == 3

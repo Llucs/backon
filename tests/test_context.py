@@ -3,7 +3,7 @@ import pytest
 import backon
 from backon._context import _retry_context_manager, get_attempt_number, is_retrying
 
-_KW = dict(jitter=None, interval=0.01)
+_KW = {"jitter": None, "interval": 0.01}
 
 
 class TestIsRetrying:

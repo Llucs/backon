@@ -170,14 +170,13 @@ class TestRetryingContextManager:
         def flaky():
             raise ValueError("fail")
 
-        with pytest.raises(ValueError):
-            with backon.Retrying(
-                backon.expo,
-                exception=ValueError,
-                max_tries=2,
-                jitter=None,
-            ) as r:
-                r.call(flaky)
+        with pytest.raises(ValueError), backon.Retrying(
+            backon.expo,
+            exception=ValueError,
+            max_tries=2,
+            jitter=None,
+        ) as r:
+            r.call(flaky)
 
     @pytest.mark.asyncio
     async def test_retrying_async(self):

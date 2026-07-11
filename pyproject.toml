@@ -39,6 +39,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Utilities",
+    "Typing :: Typed",
 ]
 
 [project.urls]
@@ -66,7 +67,7 @@ test = [
 
 [tool.coverage.run]
 source = ["backon"]
-omit = ["backon/_async.py", "backon/_sync.py", "backon/_hedging.py", "backon/_instrumentation.py", "backon/_testing.py", "backon/_trio.py"]
+omit = ["backon/_async.py", "backon/_sync.py", "backon/_instrumentation.py", "backon/_testing.py", "backon/_trio.py"]
 branch = true
 command_line = "-m pytest"
 
@@ -78,6 +79,10 @@ skip_empty = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+filterwarnings = [
+    "error",
+    "ignore:Couldn't import C tracer",
+]
 
 [tool.mypy]
 python_version = "3.10"
@@ -91,4 +96,10 @@ target-version = "py310"
 line-length = 88
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP"]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "RET", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["RET504"]
+"tests/test_instrumentation.py" = ["SIM117"]
+"backon/_circuit_breaker.py" = ["SIM102"]
+"backon/_trio.py" = ["RET505", "RET507"]

@@ -49,10 +49,7 @@ def _init_wait_gen(wait_gen, wait_gen_kwargs):
 
 def _next_wait(wait, send_value, jitter, elapsed, max_time):
     value = wait.next(send_value)
-    if jitter is not None:
-        seconds = jitter(value)
-    else:
-        seconds = value
+    seconds = jitter(value) if jitter is not None else value
 
     seconds *= _TEST_CONFIG["backoff_multiplier"]
 
@@ -76,7 +73,7 @@ def _prepare_logger(logger):
 
 
 class _LazyLogHandler:
-    __slots__ = ("_handler", "_factory")
+    __slots__ = ("_factory", "_handler")
 
     def __init__(self, handler, logger, log_level):
         self._handler = None

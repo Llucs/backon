@@ -194,7 +194,7 @@ class TestFastPathSuccessPlusStop:
         )
         def poll():
             calls.append(1)
-            return None
+            return
 
         r = poll()
         assert r is None

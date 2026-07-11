@@ -145,24 +145,23 @@ class TestOTelMetrics:
         with patch.dict(
             "sys.modules",
             {"opentelemetry": MagicMock(), "opentelemetry.metrics": mock_metrics},
-        ):
-            with patch("backon._instrumentation.otel_metrics", mock_metrics):
-                from backon._instrumentation import OTelMetrics
+        ), patch("backon._instrumentation.otel_metrics", mock_metrics):
+            from backon._instrumentation import OTelMetrics
 
-                ot = OTelMetrics()
-                assert ot._enabled is True
-                mock_metrics.get_meter.assert_called_once_with("backon")
-                assert mock_meter.create_counter.call_count == 6
-                assert mock_meter.create_histogram.call_count == 1
+            ot = OTelMetrics()
+            assert ot._enabled is True
+            mock_metrics.get_meter.assert_called_once_with("backon")
+            assert mock_meter.create_counter.call_count == 6
+            assert mock_meter.create_histogram.call_count == 1
 
-                ot.emit_attempt(1, 0.5, "func")
-                mock_counter.add.assert_called_with(1, attributes={"target": "func"})
-                mock_histogram.record.assert_called_with(
-                    0.5, attributes={"target": "func"}
-                )
+            ot.emit_attempt(1, 0.5, "func")
+            mock_counter.add.assert_called_with(1, attributes={"target": "func"})
+            mock_histogram.record.assert_called_with(
+                0.5, attributes={"target": "func"}
+            )
 
-                ot.emit_success(2, 1.0, "func")
-                mock_counter.add.assert_called_with(1, attributes={"target": "func"})
+            ot.emit_success(2, 1.0, "func")
+            mock_counter.add.assert_called_with(1, attributes={"target": "func"})
 
     def test_custom_meter_name(self) -> None:
         mock_meter = MagicMock()
@@ -174,12 +173,11 @@ class TestOTelMetrics:
         with patch.dict(
             "sys.modules",
             {"opentelemetry": MagicMock(), "opentelemetry.metrics": mock_metrics},
-        ):
-            with patch("backon._instrumentation.otel_metrics", mock_metrics):
-                from backon._instrumentation import OTelMetrics
+        ), patch("backon._instrumentation.otel_metrics", mock_metrics):
+            from backon._instrumentation import OTelMetrics
 
-                OTelMetrics("custom_meter")
-                mock_metrics.get_meter.assert_called_with("custom_meter")
+            OTelMetrics("custom_meter")
+            mock_metrics.get_meter.assert_called_with("custom_meter")
 
 
 class TestGlobalCollector:

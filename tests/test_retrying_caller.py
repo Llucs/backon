@@ -2,7 +2,7 @@ import pytest
 
 import backon
 
-_KW = dict(jitter=None, interval=0.01)
+_KW = {"jitter": None, "interval": 0.01}
 
 
 class TestRetryingCaller:

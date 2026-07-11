@@ -142,10 +142,13 @@ class TestOTelMetrics:
         mock_metrics = MagicMock()
         mock_metrics.get_meter = MagicMock(return_value=mock_meter)
 
-        with patch.dict(
-            "sys.modules",
-            {"opentelemetry": MagicMock(), "opentelemetry.metrics": mock_metrics},
-        ), patch("backon._instrumentation.otel_metrics", mock_metrics):
+        with (
+            patch.dict(
+                "sys.modules",
+                {"opentelemetry": MagicMock(), "opentelemetry.metrics": mock_metrics},
+            ),
+            patch("backon._instrumentation.otel_metrics", mock_metrics),
+        ):
             from backon._instrumentation import OTelMetrics
 
             ot = OTelMetrics()
@@ -156,9 +159,7 @@ class TestOTelMetrics:
 
             ot.emit_attempt(1, 0.5, "func")
             mock_counter.add.assert_called_with(1, attributes={"target": "func"})
-            mock_histogram.record.assert_called_with(
-                0.5, attributes={"target": "func"}
-            )
+            mock_histogram.record.assert_called_with(0.5, attributes={"target": "func"})
 
             ot.emit_success(2, 1.0, "func")
             mock_counter.add.assert_called_with(1, attributes={"target": "func"})
@@ -170,10 +171,13 @@ class TestOTelMetrics:
         mock_metrics = MagicMock()
         mock_metrics.get_meter = MagicMock(return_value=mock_meter)
 
-        with patch.dict(
-            "sys.modules",
-            {"opentelemetry": MagicMock(), "opentelemetry.metrics": mock_metrics},
-        ), patch("backon._instrumentation.otel_metrics", mock_metrics):
+        with (
+            patch.dict(
+                "sys.modules",
+                {"opentelemetry": MagicMock(), "opentelemetry.metrics": mock_metrics},
+            ),
+            patch("backon._instrumentation.otel_metrics", mock_metrics),
+        ):
             from backon._instrumentation import OTelMetrics
 
             OTelMetrics("custom_meter")

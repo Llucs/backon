@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Features — backon</title>
+<meta name="description" content="Advanced backon features: circuit breaker, hedging, metrics, rate limiter, testing utilities, trio support, and more.">
+<link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a href="../" class="logo">
+      <svg viewBox="0 0 500 500"><defs><linearGradient id="nl"><stop offset="0%" stop-color="#4F8CFF"/><stop offset="100%" stop-color="#2563EB"/></linearGradient></defs><circle cx="250" cy="250" r="250" fill="url(#nl)"/><g fill="none" stroke="#FFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"><path d="M 205 145 L 105 250 L 205 355"/><path d="M 295 145 L 395 250 L 295 355"/></g></svg>
+      backon
+    </a>
+    <div class="nav-links">
+      <a href="quickstart.html" class="nav-link">Docs</a>
+      <a href="api.html" class="nav-link">API</a>
+      <a href="advanced.html" class="nav-link active">Advanced</a>
+      <a href="changelog.html" class="nav-link">Changelog</a>
+    </div>
+    <div class="nav-right">
+      <a href="https://github.com/Llucs/backon" class="gh-link" target="_blank">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <button class="mobile-toggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-content">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="../">Home</a> <span>/</span> <span>Advanced Features</span>
+    </div>
+
+    <div class="page-header">
+      <h1>Advanced Features</h1>
+      <p>Enterprise-grade resilience patterns and utilities built into backon.</p>
+    </div>
+
+    <div class="toc">
+      <h3>Contents</h3>
+      <ol>
+        <li><a href="#circuit-breaker">Circuit Breaker</a></li>
+        <li><a href="#hedging">Hedging</a></li>
+        <li><a href="#metrics">Metrics</a></li>
+        <li><a href="#rate-limiter">Rate Limiter</a></li>
+        <li><a href="#testing">Testing Utilities</a></li>
+        <li><a href="#trio">Trio Support</a></li>
+        <li><a href="#context-inspection">Retry Context Inspection</a></li>
+        <li><a href="#dynamic-backoff">Dynamic Backoff</a></li>
+        <li><a href="#hot-loop">Hot Loop Detection</a></li>
+        <li><a href="#operator-composition">Operator Composition</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#migration">Migration from backoff</a></li>
+      </ol>
+    </div>
+
+    <section id="circuit-breaker" class="section">
+      <h2>Circuit Breaker <span class="tag tag-pro">PRO</span></h2>
+      <p>The circuit breaker prevents repeated retries against a failing service, with automatic recovery. Implements three states: CLOSED (normal), OPEN (failing), HALF_OPEN (testing recovery). Thread-safe via <code>threading.Lock</code>.</p>
+
+      <div class="highlight-box">
+        <h3>CircuitBreaker parameters</h3>
+        <table>
+          <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>failure_threshold</code></td><td><code>5</code></td><td>Consecutive failures before opening the circuit</td></tr>
+            <tr><td><code>recovery_timeout</code></td><td><code>60.0</code></td><td>Seconds before transitioning from OPEN to HALF_OPEN</td></tr>
+            <tr><td><code>half_open_max_calls</code></td><td><code>1</code></td><td>Allowed calls in HALF_OPEN state before fully closing</td></tr>
+            <tr><td><code>name</code></td><td><code>""</code></td><td>Identifier for the breaker</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <pre><span class="kw">from</span> <span class="fn">backon</span> <span class="kw">import</span> <span class="fn">CircuitBreaker</span>, <span class="fn">BreakerRetrying</span>, <span class="fn">CircuitOpenError</span>
+
+breaker = <span class="fn">BreakerRetrying</span>(
+    <span class="fn">backon.expo</span>, max_tries=<span class="num">3</span>,
+    breaker=<span class="fn">CircuitBreaker</span>(
+        failure_threshold=<span class="num">5</span>,
+        recovery_timeout=<span class="num">60.0</span>,
+        half_open_max_calls=<span class="num">1</span>,
+    ),
+)
+
+<span class="kw">try</span>:
+    result = <span class="fn">breaker.call</span>(fetch)
+<span class="kw">except</span> <span class="tp">CircuitOpenError</span>:
+    <span class="fn">print</span>(<span class="str">"Circuit is open, skipping request"</span>)</pre>
+
+      <p>The <code>CircuitBreaker</code> can also be used directly as a standalone protection for any callable:</p>
+      <pre>cb = <span class="fn">CircuitBreaker</span>(failure_threshold=<span class="num">3</span>, recovery_timeout=<span class="num">30.0</span>)
+
+<span class="cm"># Direct call (no retry, just circuit breaking)</span>
+<span class="kw">try</span>:
+    result = <span class="fn">cb.call</span>(fetch)
+<span class="kw">except</span> <span class="tp">CircuitOpenError</span>:
+    <span class="fn">print</span>(<span class="str">"Skipping - circuit is open"</span>)</pre>
+
+      <p>The circuit breaker tracks state transitions:</p>
+      <ul class="feature-list" style="grid-template-columns: 1fr;">
+        <li><strong>CLOSED</strong> — normal operation. Failures increment a counter. When <code>failure_count >= failure_threshold</code>, transitions to OPEN.</li>
+        <li><strong>OPEN</strong> — all calls are rejected with <code>CircuitOpenError</code>. After <code>recovery_timeout</code> seconds, transitions to HALF_OPEN.</li>
+        <li><strong>HALF_OPEN</strong> — allows up to <code>half_open_max_calls</code> probe requests. If any succeeds, transitions back to CLOSED. If any fails, transitions back to OPEN.</li>
+      </ul>
+    </section>
+
+    <section id="hedging" class="section">
+      <h2>Hedging <span class="tag tag-pro">PRO</span></h2>
+      <p>Run multiple retry attempts concurrently and return the first successful result. Uses <code>ThreadPoolExecutor</code> (sync) or <code>asyncio</code> tasks (async) with <code>FIRST_COMPLETED</code> strategy.</p>
+
+      <div class="highlight-box">
+        <h3>Hedging parameters</h3>
+        <table>
+          <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>max_hedge</code></td><td><code>3</code></td><td>Number of concurrent hedged requests</td></tr>
+            <tr><td><code>timeout</code></td><td><code>None</code></td><td>Maximum time to wait for any hedge</td></tr>
+            <tr><td><code>on_hedge</code></td><td><code>None</code></td><td>Callback when a hedge request is sent</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <pre><span class="kw">from</span> <span class="fn">backon</span> <span class="kw">import</span> <span class="fn">hedge</span>, <span class="fn">HedgingRetrying</span>, <span class="fn">on_hedge</span>
+
+<span class="cm"># Functional API</span>
+result = <span class="fn">hedge</span>(fetch, <span class="fn">backon.expo</span>, max_hedge=<span class="num">3</span>)
+
+<span class="cm"># Decorator API</span>
+<span class="kw">@</span><span class="fn">on_hedge</span>(<span class="fn">backon.expo</span>, max_hedge=<span class="num">3</span>)
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    ...
+
+<span class="cm"># Context manager</span>
+<span class="kw">with</span> <span class="fn">HedgingRetrying</span>(<span class="fn">backon.expo</span>, max_hedge=<span class="num">3</span>) <span class="kw">as</span> h:
+    result = <span class="fn">h.call</span>(fetch)</pre>
+
+      <p>Internally, hedging spawns <code>max_hedge</code> concurrent retry loops, each running <code>_retry_sync_inner</code> / <code>_retry_async_inner</code> independently. The first one to succeed returns; all others are cancelled.</p>
+    </section>
+
+    <section id="metrics" class="section">
+      <h2>Metrics <span class="tag tag-pro">PRO</span></h2>
+      <p>Optional instrumentation with Prometheus, OpenTelemetry, and structlog. Auto-detection runs at import time (first available: prometheus_client > structlog > no-op). Each requires its corresponding package to be installed.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="icon">📈</div>
+          <h3>PrometheusMetrics</h3>
+          <p>Creates counters: <code>backon_retry_attempts_total</code>, <code>backon_retry_success_total</code>, <code>backon_retry_failure_total</code>, <code>backon_circuit_breaker_open_total</code>, <code>backon_circuit_breaker_close_total</code>, <code>backon_hedge_requests_total</code>.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔭</div>
+          <h3>OTelMetrics</h3>
+          <p>OpenTelemetry metrics via <code>opentelemetry-api</code>. Same counters plus <code>backon.retry.attempt_duration</code> histogram. Configurable meter name.</p>
+        </div>
+        <div class="card">
+          <div class="icon">📝</div>
+          <h3>StructlogMetrics</h3>
+          <p>Structured logging via structlog. Emits events: <code>retry.attempt</code>, <code>retry.success</code>, <code>retry.failure</code>, <code>circuit_breaker.open</code>, <code>circuit_breaker.close</code>, <code>hedge.request</code>.</p>
+        </div>
+      </div>
+
+      <pre><span class="kw">from</span> <span class="fn">backon</span> <span class="kw">import</span> <span class="fn">PrometheusMetrics</span>, <span class="fn">OTelMetrics</span>, <span class="fn">StructlogMetrics</span>, <span class="fn">set_metrics_collector</span>
+
+<span class="cm"># Prometheus</span>
+<span class="fn">set_metrics_collector</span>(<span class="fn">PrometheusMetrics</span>())
+
+<span class="cm"># OpenTelemetry</span>
+<span class="fn">set_metrics_collector</span>(<span class="fn">OTelMetrics</span>(meter_name=<span class="str">"myapp.backon"</span>))
+
+<span class="cm"># Structlog</span>
+<span class="fn">set_metrics_collector</span>(<span class="fn">StructlogMetrics</span>())</pre>
+
+      <p>Query the active collector:</p>
+      <pre><span class="kw">import</span> <span class="fn">backon</span>
+<span class="fn">print</span>(<span class="fn">backon.get_metrics_collector</span>())</pre>
+    </section>
+
+    <section id="rate-limiter" class="section">
+      <h2>Rate Limiter</h2>
+      <p>A sliding window rate limiter that throttles retry calls to avoid overwhelming a backend. Integrated into all retry loops via the <code>rate_limit</code> parameter.</p>
+
+      <pre><span class="kw">from</span> <span class="fn">backon</span> <span class="kw">import</span> <span class="fn">RateLimiter</span>
+
+limiter = <span class="fn">RateLimiter</span>(max_calls=<span class="num">10</span>, period=<span class="num">1.0</span>)  <span class="cm"># max 10 calls per second</span>
+
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">5</span>, rate_limit=limiter)
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    ...</pre>
+
+      <div class="alert alert-info">
+        <strong>Note:</strong> <code>RateLimitError</code> is raised only by direct <code>RateLimiter.__call__</code> / <code>RateLimiter.acquire</code> usage. Inside a retry loop (<code>rate_limit=...</code>), exceeding the limit just throttles — the loop sleeps for the computed backoff before the next attempt.
+      </div>
+    </section>
+
+    <section id="testing" class="section">
+      <h2>Testing Utilities</h2>
+      <p>backon provides a comprehensive testing module under <code>backon._testing</code> (exported to the public API).</p>
+
+      <pre><span class="kw">from</span> <span class="fn">backon</span> <span class="kw">import</span> (
+    <span class="fn">disable_retries</span>, <span class="fn">enable_retries</span>,
+    <span class="fn">test_config</span>, <span class="fn">limit_retries</span>, <span class="fn">remove_backoff</span>,
+    <span class="fn">assert_retried</span>, <span class="fn">assert_not_retried</span>,
+)</pre>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3><code>disable_retries()</code></h3>
+          <p>Context manager that globally disables retry within the block. Calls the target function directly.</p>
+          <pre><span class="kw">with</span> <span class="fn">disable_retries</span>():
+    result = <span class="fn">fetch</span>()</pre>
+        </div>
+        <div class="card">
+          <h3><code>limit_retries(n)</code></h3>
+          <p>Context manager that overrides max retries to <code>n</code> for the block. Uses the internal <code>_TEST_CONFIG</code> dict.</p>
+          <pre><span class="kw">with</span> <span class="fn">limit_retries</span>(<span class="num">2</span>):
+    result = <span class="fn">fetch</span>()</pre>
+        </div>
+        <div class="card">
+          <h3><code>remove_backoff()</code></h3>
+          <p>Context manager that sets backoff multiplier to 0, eliminating all wait times. Retries happen instantly.</p>
+          <pre><span class="kw">with</span> <span class="fn">remove_backoff</span>():
+    result = <span class="fn">fetch</span>()</pre>
+        </div>
+        <div class="card">
+          <h3><code>test_config()</code></h3>
+          <p>Context manager to set <code>max_retries</code>, <code>backoff_multiplier</code>, and <code>max_backoff</code> in a block.</p>
+        </div>
+        <div class="card">
+          <h3><code>assert_retried(fn, n)</code></h3>
+          <p>Asserts that <code>fn</code> was retried exactly <code>n</code> times. Wraps the function in a counting spy and drives it through <code>on_exception</code>. Raises <code>RetryAssertionError</code> on failure.</p>
+        </div>
+        <div class="card">
+          <h3><code>assert_not_retried(fn)</code></h3>
+          <p>Asserts that <code>fn</code> was called exactly 1 time (not retried). Same spy mechanism as <code>assert_retried</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="trio" class="section">
+      <h2>Trio Support</h2>
+      <p>Retry with the trio async framework. The trio helpers live in <code>backon._trio</code> — since trio is an optional dependency, these are deliberately not part of the top-level namespace.</p>
+
+      <pre><span class="kw">from</span> <span class="fn">backon._trio</span> <span class="kw">import</span> <span class="fn">retry_exception</span>, <span class="fn">retry_predicate</span>
+
+<span class="kw">@</span><span class="fn">retry_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+<span class="kw">async def</span> <span class="fn">fetch</span>():
+    ...</pre>
+
+      <p>Requires <code>trio</code> to be installed.</p>
+    </section>
+
+    <section id="context-inspection" class="section">
+      <h2>Retry Context Inspection</h2>
+      <p>Check if code is running inside a retry and get the current attempt number anywhere in the call stack. Uses <code>contextvars</code> — thread-safe and async-safe.</p>
+
+      <pre><span class="kw">from</span> <span class="fn">backon</span> <span class="kw">import</span> <span class="fn">is_retrying</span>, <span class="fn">get_attempt_number</span>
+
+<span class="kw">def</span> <span class="fn">log_attempt</span>():
+    <span class="kw">if</span> <span class="fn">is_retrying</span>():
+        <span class="fn">print</span>(<span class="str">f"This is attempt #{get_attempt_number()}"</span>)
+
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    <span class="fn">log_attempt</span>()
+    <span class="kw">return</span> <span class="fn">api.call</span>()</pre>
+
+      <p>Internally, every retry loop (both fast and slow paths) wraps the target call in <code>_retry_context_manager(attempt_number)</code>, which sets a <code>contextvars.ContextVar</code> for the duration of the call.</p>
+    </section>
+
+    <section id="dynamic-backoff" class="section">
+      <h2>Dynamic Backoff</h2>
+      <p>Override the wait time per attempt by returning a <code>float</code> from the <code>giveup</code> callback. Useful for respecting <code>Retry-After</code> headers.</p>
+
+      <pre><span class="kw">def</span> <span class="fn">respect_retry_after</span>(exc):
+    <span class="kw">return</span> exc.response.headers.get(<span class="str">"Retry-After"</span>, <span class="num">1.0</span>)
+
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">HTTPError</span>, giveup=<span class="fn">respect_retry_after</span>)
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    ...</pre>
+
+      <p>When <code>giveup</code> returns a <code>float</code>, backon interprets this as a custom wait time override. The retry loop uses that value as the wait duration instead of computing one from the wait generator. This allows the server to tell the client how long to wait via standard HTTP headers.</p>
+    </section>
+
+    <section id="hot-loop" class="section">
+      <h2>Hot Loop Detection</h2>
+      <p>When 5 or more retries occur with less than 100ms between them, backon logs a warning. This helps detect misconfigured retry policies before they cause issues.</p>
+
+      <pre>WARNING:backon:Hot loop detected: 5 retries in quick succession.
+Add jitter or increase backoff.</pre>
+
+      <p>The detection uses a global dictionary guarded by <code>threading.Lock</code>. It tracks timestamps of retry sleeps and resets the counter whenever a sleep interval exceeds 100ms.</p>
+    </section>
+
+    <section id="operator-composition" class="section">
+      <h2>Operator Composition</h2>
+      <p>Compose stops, conditions, and wait generators using Python operators for a clean, expressive API.</p>
+
+      <pre><span class="cm"># Stop when either condition is met</span>
+stop = <span class="fn">stop_after_attempt</span>(<span class="num">5</span>) | <span class="fn">stop_after_delay</span>(<span class="num">30.0</span>)
+
+<span class="cm"># Retry when both conditions pass</span>
+cond = <span class="fn">retry_if_exception_type</span>(<span class="tp">TimeoutError</span>) & <span class="fn">retry_if_result</span>(<span class="kw">lambda</span> x: x <span class="kw">is</span> <span class="kw">None</span>)
+
+<span class="cm"># Wait with combined strategy (sequential chain)</span>
+wait = <span class="fn">backon.expo</span>(base=<span class="num">3</span>) + <span class="fn">backon.constant</span>(interval=<span class="num">0.5</span>)</pre>
+
+      <p>The <code>Stop</code> base class implements <code>__or__</code> (via <code>stop_any</code>) and <code>__and__</code> (via <code>stop_all</code>). <code>RetryCondition</code> does the same. <code>_Wait</code> implements <code>__add__</code> (via <code>_CombinedWait</code>, creating a sequential chain).</p>
+    </section>
+
+    <section id="architecture" class="section">
+      <h2>Architecture</h2>
+      <p>backon is organized into focused modules under the <code>backon/</code> package. Each module handles a specific concern.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3><code>_retry/</code> package</h3>
+          <p>Core retry logic split into 7 focused submodules: <code>_api.py</code>, <code>_classes.py</code>, <code>_decide.py</code>, <code>_fast.py</code>, <code>_helpers.py</code>, <code>_inner.py</code>, <code>_loops.py</code>. Previously a single 1277-line file.</p>
+        </div>
+        <div class="card">
+          <h3><code>_fast.py</code></h3>
+          <p>Monolithic inline retry loop for the common case (no handlers, no jitter, no rate limiter). Avoids dataclass allocations and dict creation. ~3&mu;s vs ~22&mu;s for standard path.</p>
+        </div>
+        <div class="card">
+          <h3><code>_loops.py</code></h3>
+          <p>Full-featured retry loops for sync and async, with <code>_decide_outcome()</code> decision logic. Handles handlers, jitter, rate limiting, attempt timeouts, and hot loop detection.</p>
+        </div>
+        <div class="card">
+          <h3><code>_wait_gen.py</code></h3>
+          <p>Class-based wait generators using <code>_Wait</code> base class with <code>.next()</code> method. Replaced generator-based approach for ~15% faster iteration. Supports <code>+</code> operator composition.</p>
+        </div>
+        <div class="card">
+          <h3><code>_conditions.py</code></h3>
+          <p>Stop and RetryCondition classes with <code>|</code> and <code>&amp;</code> operator overloading. 20+ condition types for fine-grained retry control.</p>
+        </div>
+        <div class="card">
+          <h3><code>_decorator.py</code></h3>
+          <p>on_exception and on_predicate decorators. Handles sync, async, generator, and async generator targets. Generates <code>retry_with()</code> method on decorated functions.</p>
+        </div>
+        <div class="card">
+          <h3><code>_circuit_breaker.py</code></h3>
+          <p>CircuitBreaker with CLOSED/OPEN/HALF_OPEN states. BreakerRetrying wraps Retrying with circuit breaker protection. All state transitions are thread-safe.</p>
+        </div>
+        <div class="card">
+          <h3><code>_hedging.py</code></h3>
+          <p>Hedging with ThreadPoolExecutor (sync) and asyncio tasks (async). FIRST_COMPLETED strategy with early cancellation of slower hedges.</p>
+        </div>
+        <div class="card">
+          <h3><code>_instrumentation.py</code></h3>
+          <p>MetricsCollector base class, PrometheusMetrics, OTelMetrics, StructlogMetrics. Auto-detection at import time. All collectors are optional with zero hard dependencies.</p>
+        </div>
+        <div class="card">
+          <h3><code>_state.py</code></h3>
+          <p>Dataclasses for retry state: RetryState, RetryCallState, Attempt, AttemptResult. Exception classes: TryAgain, RetryError, AttemptTimeoutError.</p>
+        </div>
+        <div class="card">
+          <h3><code>_context.py</code></h3>
+          <p>contextvars-based retry context for is_retrying() and get_attempt_number(). Set via <code>_retry_context_manager</code> context manager in every retry loop.</p>
+        </div>
+        <div class="card">
+          <h3><code>_testing.py</code></h3>
+          <p>Testing utilities: disable_retries, enable_retries, test_config, limit_retries, remove_backoff, assert_retried, assert_not_retried.</p>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <h3>Fast Path Auto-Detection</h3>
+        <p>The <code>_is_fast_path()</code> function checks if any handlers, jitter, rate limiter, attempt timeout, or state holder are configured. If none are present, the <code>_retry_fast_sync</code> / <code>_retry_fast_async</code> monolithic loops are used, avoiding all dataclass and dict allocations.</p>
+      </div>
+    </section>
+
+    <section id="migration" class="section">
+      <h2>Migration from backoff</h2>
+      <p>backon is a near-drop-in replacement for <a href="https://github.com/litl/backoff" target="_blank">backoff</a>. Change your imports and most code works as-is.</p>
+
+      <div class="side-by-side">
+        <pre><span class="cm"># backoff import</span>
+<span class="kw">import</span> <span class="fn">backoff</span>
+<span class="kw">@</span><span class="fn">backoff.on_exception</span>(<span class="fn">backoff.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)</pre>
+        <pre><span class="cm"># backon import</span>
+<span class="kw">import</span> <span class="fn">backon</span>
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)</pre>
+      </div>
+
+      <div class="table-wrap">
+      <table class="comparison-table">
+        <thead><tr><th>Area</th><th>backoff</th><th>backon</th></tr></thead>
+        <tbody>
+          <tr><td>Python support</td><td>3.7+</td><td>3.10+</td></tr>
+          <tr><td>Type hints</td><td>Partial</td><td>Full (mypy validated, py.typed)</td></tr>
+          <tr><td><code>on_attempt</code> callback</td><td>Not supported</td><td>Supported</td></tr>
+          <tr><td>Context manager</td><td>Not supported</td><td><code>Retrying</code> class</td></tr>
+          <tr><td>Functional API</td><td>Not supported</td><td><code>retry()</code>, <code>RetryingCaller</code></td></tr>
+          <tr><td>Global toggle</td><td>Not supported</td><td><code>disable()</code> / <code>enable()</code></td></tr>
+          <tr><td>Custom sleep</td><td>Not supported</td><td><code>sleep=</code> parameter</td></tr>
+          <tr><td>Circuit breaker</td><td>Not supported</td><td><code>CircuitBreaker</code> + <code>BreakerRetrying</code></td></tr>
+          <tr><td>Hedging</td><td>Not supported</td><td><code>hedge()</code> / <code>on_hedge()</code></td></tr>
+          <tr><td>Metrics</td><td>Not supported</td><td>Prometheus / OTel / structlog</td></tr>
+          <tr><td>Wait generator composition</td><td>Not supported</td><td><code>+</code> operator, <code>wait_combine()</code></td></tr>
+          <tr><td>Stop / condition composition</td><td>Not supported</td><td><code>|</code> / <code>&amp;</code> operators</td></tr>
+          <tr><td>Trio support</td><td>Not supported</td><td><code>backon._trio</code></td></tr>
+          <tr><td>Iterator API</td><td>Not supported</td><td><code>for attempt in Retrying()</code></td></tr>
+          <tr><td>Build system</td><td>Poetry</td><td>PDM (PEP 621)</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="alert alert-info">
+        <strong>Note on <code>__version__</code>:</strong> In backoff, <code>__version__</code> was a static string. In backon, <code>__version__</code> is read from <code>importlib.metadata</code> (so <code>pip install backon</code> is required for the real value). Running from a source checkout without installing returns <code>"0.0.0"</code>.
+      </div>
+    </section>
+
+    <div style="margin: 40px 0; display: flex; gap: 12px;">
+      <a href="api.html" class="btn btn-outline">API Reference</a>
+      <a href="changelog.html" class="btn btn-primary">View Changelog</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>
+    <svg viewBox="0 0 500 500" class="footer-logo"><defs><linearGradient id="fl"><stop offset="0%" stop-color="#4F8CFF"/><stop offset="100%" stop-color="#2563EB"/></linearGradient></defs><circle cx="250" cy="250" r="250" fill="url(#fl)"/><g fill="none" stroke="#FFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"><path d="M 205 145 L 105 250 L 205 355"/><path d="M 295 145 L 395 250 L 295 355"/></g></svg>
+    <strong>backon</strong>
+  </p>
+  <p style="margin-top: 4px;">
+    <a href="https://github.com/Llucs/backon" target="_blank">GitHub</a> &middot;
+    <a href="https://pypi.org/project/backon/" target="_blank">PyPI</a> &middot;
+    <a href="https://github.com/Llucs/backon/blob/main/LICENSE" target="_blank">MIT License</a>
+  </p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

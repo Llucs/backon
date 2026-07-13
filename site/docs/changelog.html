@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Changelog — backon</title>
+<meta name="description" content="Release history and changelog for backon, from version 3.0.0 through 4.2.3.">
+<link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a href="../" class="logo">
+      <svg viewBox="0 0 500 500"><defs><linearGradient id="nl"><stop offset="0%" stop-color="#4F8CFF"/><stop offset="100%" stop-color="#2563EB"/></linearGradient></defs><circle cx="250" cy="250" r="250" fill="url(#nl)"/><g fill="none" stroke="#FFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"><path d="M 205 145 L 105 250 L 205 355"/><path d="M 295 145 L 395 250 L 295 355"/></g></svg>
+      backon
+    </a>
+    <div class="nav-links">
+      <a href="quickstart.html" class="nav-link">Docs</a>
+      <a href="api.html" class="nav-link">API</a>
+      <a href="advanced.html" class="nav-link">Advanced</a>
+      <a href="changelog.html" class="nav-link active">Changelog</a>
+    </div>
+    <div class="nav-right">
+      <a href="https://github.com/Llucs/backon" class="gh-link" target="_blank">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <button class="mobile-toggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-content">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="../">Home</a> <span>/</span> <span>Changelog</span>
+    </div>
+
+    <div class="page-header">
+      <h1>Changelog</h1>
+      <p>Complete release history from the initial fork through the latest version.</p>
+    </div>
+
+    <div class="alert alert-info" style="margin-bottom: 32px;">
+      <strong>Latest version:</strong> 4.2.3 (2026-07-10) &middot;
+      <a href="https://pypi.org/project/backon/" target="_blank">View on PyPI</a>
+    </div>
+
+    <div class="api-card">
+      <details open>
+        <summary><strong>4.2.3</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-10</span> <span class="tag tag-new" style="margin-left: 8px;">LATEST</span></summary>
+        <div class="body">
+          <p>Documentation: rewrite the <code>AGENTS.md</code> Architecture section to match the actual repository layout. The previous text pointed AI agents to <code>backon/_sync.py</code>, <code>backon/_async.py</code>, and a non-existent <code>backon/_retry.py</code>. The new section documents the <code>_retry/</code> subpackage alongside all other modules.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>4.2.2</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-10</span></summary>
+        <div class="body">
+          <p><strong>Fix:</strong> <code>stop_before_delay(max_delay)</code> actually stopping the retry loop. <code>_decide_outcome</code> now writes the upcoming wait into <code>state.outcome.wait</code> before invoking the <code>Stop</code> predicate, so <code>elapsed + wait >= max_delay</code> evaluates against the real upcoming wait rather than <code>0</code>.</p>
+          <p><strong>Documentation:</strong> Context manager section clarifies that <code>Retrying.__exit__</code>/<code>__aexit__</code> do not re-raise the final exception. Rate Limiter section clarifies that <code>RateLimitError</code> is only raised by direct <code>RateLimiter</code> usage. Migration section adds note about <code>__version__</code> requiring <code>pip install</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>4.2.1</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-10</span></summary>
+        <div class="body">
+          <p>Replace private-module imports in README examples with the public API. Circuit Breaker, Hedging, Metrics, Testing Utilities, and auto-detection snippets now use <code>from backon import ...</code> for symbols already in <code>__all__</code>. Trio section documents <code>backon._trio</code> as deliberately private.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>4.2.0</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-10</span></summary>
+        <div class="body">
+          <p><strong>Feature:</strong> <code>RetryingCaller</code> and <code>AsyncRetryingCaller</code> now accept and forward the full set of retry options. Previously they silently dropped <code>giveup</code>, <code>predicate</code>, <code>condition</code>, <code>stop</code>, the <code>on_*</code> handlers, <code>retry_error_callback</code>, <code>raise_on_giveup</code>, <code>logger</code>, <code>before</code>/<code>after</code>, and <code>name</code>. The Dynamic Backoff feature (giveup predicate / float return) and the Handlers API are now reachable through the callable caller surface.</p>
+          <p><strong>Tests:</strong> 12 new tests in <code>test_retrying_caller.py</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>4.1.5</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-10</span></summary>
+        <div class="body">
+          <p><strong>Fix:</strong> <code>assert_retried()</code> / <code>assert_not_retried()</code> ignoring their <code>fn</code> argument. Both helpers now wrap the user-supplied <code>fn</code> in a counting spy, drive it through <code>on_exception</code>, and assert the spy was invoked exactly <code>expected_tries</code> times.</p>
+          <p><strong>Fix:</strong> Wait generators losing pre-configured kwargs when composed with <code>+</code>, <code>wait_combine()</code>, or <code>wait_chain()</code>. <code>_Wait</code> now stores its original constructor args/kwargs and merges them with caller-supplied kwargs.</p>
+          <p><strong>Tests:</strong> 14 new tests across <code>test_assertions.py</code> and <code>test_wait_combine.py</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>4.1.4</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-10</span></summary>
+        <div class="body">
+          <p><strong>Fix:</strong> <code>is_retrying()</code> / <code>get_attempt_number()</code> returning <code>None</code> inside a retry when the fast path was active. The fast paths <code>_retry_fast_sync</code> and <code>_retry_fast_async</code> now enter <code>_retry_context_manager(state.tries)</code> around the <code>target()</code> call, matching the non-fast path.</p>
+          <p><strong>Tests:</strong> 5 new tests in <code>test_fast_path.py</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>4.1.3</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-10</span></summary>
+        <div class="body">
+          <p><strong>Fix:</strong> <code>raise_on_giveup=False</code> being silently ignored in the fast path. <code>_retry_fast_sync</code> and <code>_retry_fast_async</code> now thread the <code>raise_on_giveup</code> flag and return <code>None</code> on giveup when it is <code>False</code>.</p>
+          <p><strong>Fix:</strong> Fast path raising <code>RuntimeError("stop triggered on success")</code> when the <code>stop</code> predicate fires on the same iteration where the target succeeds but the condition still asks for a retry.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>4.1.2</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-10</span></summary>
+        <div class="body">
+          <p><strong>Fix:</strong> <code>hedge()</code> raising <code>TypeError: 'NoneType' object is not callable</code> whenever the target function raised. The hedge helpers now build a default <code>RetryCondition</code> via <code>_make_default_condition(exception, giveup, predicate)</code> before fanning out.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>4.1.1</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-09</span></summary>
+        <div class="body">
+          <p>Fix mypy type errors and ruff formatting issues in 4.1.0 release.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>4.1.0</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-09</span></summary>
+        <div class="body">
+          <p><strong>Performance:</strong> Add fast path (<code>_fast.py</code>) — monolithic inline retry loop for the common case. Avoids <code>RetryState</code>/<code>Attempt</code> dataclass allocations, <code>_decide_outcome()</code>, <code>_call_hdlrs</code>, <code>_retry_context_manager</code>, and <code>to_details()</code> dict creation. ~3&mu;s per success call (was ~22&mu;s).</p>
+          <p><strong>Performance:</strong> Replace generator-based wait generators with class-based <code>_Wait</code> subclasses. Uses direct <code>.next(send_value)</code> method — ~15% faster wait gen iteration.</p>
+          <p><strong>Benchmarks:</strong> 1.2x faster than tenacity on success path (42&mu;s vs 51&mu;s), 3.6x faster on 3-retry path (107&mu;s vs 387&mu;s).</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>4.0.0</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-07</span></summary>
+        <div class="body">
+          <p><strong>Breaking:</strong> Remove dead code (<code>_sync.py</code>, <code>_async.py</code>) — 507 lines of duplicate logic replaced with <code>DeprecationWarning</code> stubs.</p>
+          <p><strong>Performance:</strong> Make <code>_config_handlers</code> lazy — default log handlers are no longer created eagerly at decoration time. Replace <code>time.monotonic()</code> with <code>time.monotonic_ns()</code> for lower overhead.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>3.8.0</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-06</span></summary>
+        <div class="body">
+          <p><strong>Features:</strong> <code>wait_combine()</code> — sum multiple wait strategies at each step. <code>retry_with()</code> on decorated functions — create modified copies at the call site. Generator retry support — sync and async generators automatically retried, restarting from scratch on each attempt. <code>StructlogMetrics</code> — structured logging via structlog. Auto-detection of instrumentation.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>3.7.3 &mdash; 3.7.1</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-05</span></summary>
+        <div class="body">
+          <p>Fix ruff formatting, <code>_check_hot_loop</code> thread-safety, <code>assert_retried()</code>, <code>test_config()</code>/<code>limit_retries()</code>/<code>remove_backoff()</code> no longer being no-ops, <code>retry_unless_exception_type</code> inheriting from <code>retry_if_not_exception_type</code>, Iterator API target name, <code>_hot_loop_data</code> thread-safety.</p>
+          <p>Refactor <code>_retry_loop_sync</code>/<code>_async</code> — extract shared decision logic into <code>_decide_outcome</code>, reducing ~460 lines of duplicate logic to ~140. Split <code>_retry.py</code> (1277 lines) into 7 focused submodules under <code>_retry/</code> package. Cover 98.23% of codebase (+39 new tests).</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>3.7.0</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-07-01</span></summary>
+        <div class="body">
+          <p><strong>Features:</strong> <code>RateLimiter</code> + <code>RateLimitError</code> — sliding window rate limiter. <code>attempt_timeout</code> parameter — per-attempt timeout via <code>ThreadPoolExecutor</code> (sync) or <code>asyncio.wait_for</code> (async). Export all hidden modules to public API.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>3.6.0 &mdash; 3.6.1</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-06-30</span></summary>
+        <div class="body">
+          <p>Add <code>is_retrying()</code> / <code>get_attempt_number()</code> — <code>contextvars</code>-based retry context inspection. Dynamic backoff via <code>giveup</code> return value. Hot loop detection. <code>RetryingCaller</code> / <code>AsyncRetryingCaller</code> — callable objects with pre-bound exception type.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>3.5.0</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-06-30</span></summary>
+        <div class="body">
+          <p><strong>Major features:</strong> CircuitBreaker + BreakerRetrying — circuit breaker pattern with CLOSED/OPEN/HALF_OPEN states. <code>hedge()</code> / <code>on_hedge()</code> / <code>HedgingRetrying</code> — concurrent hedging requests. <code>MetricsCollector</code>, <code>PrometheusMetrics</code>, <code>OTelMetrics</code> — optional Prometheus/OpenTelemetry instrumentation. Testing module — <code>disable_retries()</code>, <code>limit_retries()</code>, <code>remove_backoff()</code>, assertion helpers. Trio support.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>3.4.0</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-06-28</span></summary>
+        <div class="body">
+          <p>Add <code>RetryCallState</code> dataclass with <code>elapsed</code>, <code>statistics</code>, <code>seconds_since_start</code>, <code>to_details()</code>. <code>before</code>/<code>after</code> hooks. <code>Retrying.call_state</code> and <code>Retrying.statistics</code> properties.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>3.3.0 &mdash; 3.2.0</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-06-28</span></summary>
+        <div class="body">
+          <p><strong>3.3.0:</strong> Performance optimization — 7.6x faster than tenacity and backoff. Inline hot functions, fast path for pre-configured handlers.</p>
+          <p><strong>3.2.0:</strong> Operator overloading for <code>Stop</code>, <code>RetryCondition</code>, and wait generators. Iterator API. <code>Retrying.copy()</code>. New conditions: <code>retry_if_not_exception_type</code>, <code>retry_if_not_exception_message</code>, <code>retry_if_exception_cause_type</code>. New wait generators: <code>wait_random</code>, <code>wait_exponential_jitter</code>, <code>wait_none</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>3.1.0</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-06-28</span></summary>
+        <div class="body">
+          <p>Add functional API <code>retry()</code>. <code>Retrying</code> context manager with <code>.call()</code> / <code>.async_call()</code>. <code>TryAgain</code> exception for manual retry signaling. <code>RetryCondition</code> / <code>Stop</code> type hierarchy and helper constructors. <code>backon.disable()</code> / <code>backon.enable()</code> global toggles. Version now read dynamically from <code>importlib.metadata</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="api-card">
+      <details>
+        <summary><strong>3.0.0</strong> <span style="color: var(--text-dim); font-weight: 400;">&mdash; 2026-06-28</span></summary>
+        <div class="body">
+          <p><strong>Initial fork from backoff.</strong> Drop Python 3.7, 3.8, 3.9 (minimum 3.10). Use <code>time.monotonic()</code> instead of <code>datetime.datetime.now()</code> for elapsed time. Replace Poetry with PDM (PEP 621 metadata). Add <code>py.typed</code> marker. Modernize type hints. Add GitHub Actions CI with matrix testing (3.10–3.14).</p>
+        </div>
+      </details>
+    </div>
+
+    <div style="margin: 40px 0;">
+      <a href="https://github.com/Llucs/backon/blob/main/CHANGELOG.md" target="_blank" class="btn btn-outline">View on GitHub</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>
+    <svg viewBox="0 0 500 500" class="footer-logo"><defs><linearGradient id="fl"><stop offset="0%" stop-color="#4F8CFF"/><stop offset="100%" stop-color="#2563EB"/></linearGradient></defs><circle cx="250" cy="250" r="250" fill="url(#fl)"/><g fill="none" stroke="#FFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"><path d="M 205 145 L 105 250 L 205 355"/><path d="M 295 145 L 395 250 L 295 355"/></g></svg>
+    <strong>backon</strong>
+  </p>
+  <p style="margin-top: 4px;">
+    <a href="https://github.com/Llucs/backon" target="_blank">GitHub</a> &middot;
+    <a href="https://pypi.org/project/backon/" target="_blank">PyPI</a> &middot;
+    <a href="https://github.com/Llucs/backon/blob/main/LICENSE" target="_blank">MIT License</a>
+  </p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

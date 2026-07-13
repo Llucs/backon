@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quickstart — backon</title>
+<meta name="description" content="Get started with backon in minutes. Installation, quick examples, and API overview.">
+<link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a href="../" class="logo">
+      <svg viewBox="0 0 500 500"><defs><linearGradient id="nl"><stop offset="0%" stop-color="#4F8CFF"/><stop offset="100%" stop-color="#2563EB"/></linearGradient></defs><circle cx="250" cy="250" r="250" fill="url(#nl)"/><g fill="none" stroke="#FFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"><path d="M 205 145 L 105 250 L 205 355"/><path d="M 295 145 L 395 250 L 295 355"/></g></svg>
+      backon
+    </a>
+    <div class="nav-links">
+      <a href="quickstart.html" class="nav-link active">Docs</a>
+      <a href="api.html" class="nav-link">API</a>
+      <a href="advanced.html" class="nav-link">Advanced</a>
+      <a href="changelog.html" class="nav-link">Changelog</a>
+    </div>
+    <div class="nav-right">
+      <a href="https://github.com/Llucs/backon" class="gh-link" target="_blank">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <button class="mobile-toggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-content">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="../">Home</a> <span>/</span> <span>Quickstart</span>
+    </div>
+
+    <div class="page-header">
+      <h1>Quickstart</h1>
+      <p>Installation, configuration, and basic usage examples to get you up and running with backon.</p>
+    </div>
+
+    <div class="toc">
+      <h3>Contents</h3>
+      <ol>
+        <li><a href="#install">Installation</a></li>
+        <li><a href="#retry-exception">Retry on Exception</a></li>
+        <li><a href="#retry-predicate">Retry on Predicate</a></li>
+        <li><a href="#functional">Functional API</a></li>
+        <li><a href="#context-manager">Context Manager</a></li>
+        <li><a href="#async">Async Support</a></li>
+        <li><a href="#callers">Callers</a></li>
+        <li><a href="#generators">Generator Support</a></li>
+        <li><a href="#retry-with">retry_with()</a></li>
+        <li><a href="#custom-sleep">Custom Sleep</a></li>
+        <li><a href="#global-toggle">Global Toggle</a></li>
+      </ol>
+    </div>
+
+    <section id="install" class="section">
+      <h2>Installation</h2>
+      <p>backon requires Python 3.10+ and has zero dependencies.</p>
+      <pre>pip install backon</pre>
+      <div class="alert alert-info">
+        <strong>Note:</strong> backon is a pure Python library with no external dependencies beyond the standard library. Optional integrations (Prometheus, OpenTelemetry, structlog, trio) require their respective packages.
+      </div>
+    </section>
+
+    <section id="retry-exception" class="section">
+      <h2>Retry on Exception</h2>
+      <p>The <code>@on_exception</code> decorator retries when the decorated function raises one of the specified exceptions.</p>
+      <pre><span class="kw">import</span> <span class="fn">backon</span>
+
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+<span class="kw">def</span> <span class="fn">fetch_data</span>():
+    <span class="kw">return</span> <span class="fn">api.call</span>()</pre>
+      <p>You can specify multiple exception types and configure all retry parameters:</p>
+      <pre><span class="kw">@</span><span class="fn">backon.on_exception</span>(
+    <span class="fn">backon.expo</span>, (<span class="tp">ValueError</span>, <span class="tp">TimeoutError</span>),
+    max_tries=<span class="num">5</span>,
+    max_time=<span class="num">30.0</span>,
+    jitter=<span class="kw">None</span>,
+)
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    ...
+
+<span class="cm"># With a giveup callback to stop retrying for specific exceptions</span>
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">HTTPError</span>, max_tries=<span class="num">3</span>, giveup=<span class="kw">lambda</span> e: e.status_code == <span class="num">404</span>)
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    ...</pre>
+    </section>
+
+    <section id="retry-predicate" class="section">
+      <h2>Retry on Predicate</h2>
+      <p>The <code>@on_predicate</code> decorator retries while the predicate function returns <code>True</code> for the return value. By default, it retries on falsy values (<code>operator.not_</code>).</p>
+      <pre><span class="cm"># Retry while the return value is None</span>
+<span class="kw">@</span><span class="fn">backon.on_predicate</span>(
+    <span class="fn">backon.constant</span>,
+    predicate=<span class="kw">lambda</span> x: x <span class="kw">is</span> <span class="kw">None</span>,
+    max_tries=<span class="num">5</span>,
+    interval=<span class="num">0.5</span>,
+)
+<span class="kw">def</span> <span class="fn">poll_status</span>():
+    <span class="kw">return</span> <span class="fn">check_ready</span>()</pre>
+      <p>The <code>predicate</code> parameter receives the return value of the decorated function. Retry continues while the predicate returns <code>True</code>.</p>
+    </section>
+
+    <section id="functional" class="section">
+      <h2>Functional API</h2>
+      <p>Call a function with retry without using a decorator. The <code>retry()</code> function automatically detects sync vs async functions.</p>
+      <pre>result = <span class="fn">backon.retry</span>(
+    target=<span class="fn">fetch_data</span>,
+    wait_gen=<span class="fn">backon.expo</span>,
+    exception=<span class="tp">ValueError</span>,
+    max_tries=<span class="num">3</span>,
+)</pre>
+      <p>Accepts all parameters from <code>on_exception</code> plus <code>condition</code>, <code>stop</code>, and <code>name</code>:</p>
+      <pre><span class="kw">from</span> <span class="fn">backon</span> <span class="kw">import</span> <span class="fn">stop_after_attempt</span>, <span class="fn">stop_after_delay</span>, <span class="fn">stop_any</span>
+
+result = <span class="fn">backon.retry</span>(
+    fetch_data,
+    <span class="fn">backon.expo</span>,
+    exception=<span class="tp">ValueError</span>,
+    stop=<span class="fn">stop_after_attempt</span>(<span class="num">5</span>) | <span class="fn">stop_after_delay</span>(<span class="num">30.0</span>),
+)</pre>
+    </section>
+
+    <section id="context-manager" class="section">
+      <h2>Context Manager</h2>
+      <p>The <code>Retrying</code> class provides a context manager interface. The <code>with</code> block returns the <code>Retrying</code> object so you can call <code>r.call()</code> or <code>r.async_call()</code>.</p>
+      <pre><span class="kw">import</span> <span class="fn">backon</span>
+
+<span class="kw">with</span> <span class="fn">backon.Retrying</span>(<span class="fn">backon.expo</span>, exception=<span class="tp">ValueError</span>, max_tries=<span class="num">3</span>) <span class="kw">as</span> r:
+    result = <span class="fn">r.call</span>(fetch_data)
+
+<span class="cm"># Access statistics after the call</span>
+<span class="fn">print</span>(r.statistics)
+<span class="cm"># {'start_time': ..., 'attempt_number': 2, 'idle_for': 1.5, 'elapsed': 2.3}</span></pre>
+      <div class="alert alert-info">
+        <strong>Note:</strong> The <code>__exit__</code> / <code>__aexit__</code> methods are purely a scoping device and do not re-raise the final exception. Use <code>r.statistics</code> after the call if you need attempt counts. The same applies to <code>BreakerRetrying</code> and <code>HedgingRetrying</code>.
+      </div>
+    </section>
+
+    <section id="async" class="section">
+      <h2>Async Support</h2>
+      <p>All three APIs work with async functions transparently. No special configuration required.</p>
+      <pre><span class="cm"># Decorator</span>
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+<span class="kw">async def</span> <span class="fn">fetch</span>():
+    <span class="kw">return await</span> <span class="fn">api.call</span>()
+
+<span class="cm"># Functional</span>
+result = <span class="kw">await</span> <span class="fn">backon.retry</span>(fetch, <span class="fn">backon.expo</span>, exception=<span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+
+<span class="cm"># Context manager</span>
+<span class="kw">async with</span> <span class="fn">backon.Retrying</span>(<span class="fn">backon.constant</span>, exception=<span class="tp">ValueError</span>, max_tries=<span class="num">3</span>, interval=<span class="num">0.5</span>) <span class="kw">as</span> r:
+    result = <span class="kw">await</span> <span class="fn">r.async_call</span>(fetch)</pre>
+    </section>
+
+    <section id="callers" class="section">
+      <h2>Callers</h2>
+      <p><code>RetryingCaller</code> and <code>AsyncRetryingCaller</code> provide a callable interface with pre-bound exception types.</p>
+      <pre><span class="cm"># Sync caller</span>
+caller = <span class="fn">backon.RetryingCaller</span>(<span class="fn">backon.expo</span>, max_tries=<span class="num">3</span>)
+caller = <span class="fn">caller.on</span>(<span class="tp">ValueError</span>)
+result = <span class="fn">caller</span>(m_function, arg1, arg2)
+
+<span class="cm"># Async caller</span>
+caller = <span class="fn">backon.AsyncRetryingCaller</span>(<span class="fn">backon.expo</span>, max_tries=<span class="num">3</span>).on(<span class="tp">ValueError</span>)
+result = <span class="kw">await</span> <span class="fn">caller</span>(m_async_function, arg1, arg2)</pre>
+      <p>Both accept all retry configuration options: <code>giveup</code>, <code>predicate</code>, <code>condition</code>, <code>stop</code>, the <code>on_*</code> handlers, <code>retry_error_callback</code>, <code>raise_on_giveup</code>, <code>logger</code>, <code>before</code>/<code>after</code>, and <code>name</code>.</p>
+    </section>
+
+    <section id="generators" class="section">
+      <h2>Generator Support</h2>
+      <p>Sync and async generator functions are retried transparently. On each retry, the generator is restarted from scratch.</p>
+      <pre><span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+<span class="kw">def</span> <span class="fn">gen</span>():
+    <span class="kw">yield</span> <span class="num">1</span>
+    <span class="kw">yield</span> <span class="num">2</span>
+    <span class="kw">raise</span> <span class="tp">ValueError</span>(<span class="str">"fail"</span>)
+    <span class="kw">yield</span> <span class="num">3</span>  <span class="cm"># reached on retry</span>
+
+result = <span class="fn">list</span>(<span class="fn">gen</span>())  <span class="cm"># [1, 2, 3]</span>
+
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+<span class="kw">async def</span> <span class="fn">agen</span>():
+    <span class="kw">yield</span> <span class="num">1</span>
+    <span class="kw">raise</span> <span class="tp">ValueError</span>(<span class="str">"fail"</span>)
+    <span class="kw">yield</span> <span class="num">2</span>
+
+result = [item <span class="kw">async for</span> item <span class="kw">in</span> <span class="fn">agen</span>()]  <span class="cm"># [1, 2]</span></pre>
+    </section>
+
+    <section id="retry-with" class="section">
+      <h2>retry_with()</h2>
+      <p>Every decorated function (sync, async, generator) exposes a <code>.retry_with()</code> method that returns a new decorated function with overridden parameters. The original function is unaffected.</p>
+      <pre><span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">5</span>)
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    ...
+
+<span class="cm"># Override max_tries</span>
+wrapped = fetch.<span class="fn">retry_with</span>(max_tries=<span class="num">3</span>)
+
+<span class="cm"># Override jitter</span>
+wrapped = fetch.<span class="fn">retry_with</span>(jitter=<span class="kw">None</span>)
+
+<span class="cm"># Override wait generator and sleep</span>
+wrapped = fetch.<span class="fn">retry_with</span>(wait_gen=<span class="fn">backon.constant</span>, interval=<span class="num">0.1</span>, sleep=<span class="kw">lambda</span> s: <span class="kw">None</span>)</pre>
+    </section>
+
+    <section id="custom-sleep" class="section">
+      <h2>Custom Sleep</h2>
+      <p>Replace the default sleep function for testing or special environments.</p>
+      <pre><span class="kw">@</span><span class="fn">backon.on_exception</span>(
+    <span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>,
+    sleep=<span class="kw">lambda</span> s: <span class="fn">print</span>(<span class="str">f"waiting {s}s"</span>),
+)
+<span class="kw">def</span> <span class="fn">f</span>():
+    ...
+
+<span class="cm"># With asyncio.Event for testing</span>
+<span class="kw">import</span> <span class="fn">asyncio</span>
+event = <span class="fn">asyncio.Event</span>()
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(
+    <span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>,
+    sleep=<span class="fn">backon.sleep_using_event</span>(event),
+)
+<span class="kw">async def</span> <span class="fn">f</span>():
+    ...</pre>
+    </section>
+
+    <section id="global-toggle" class="section">
+      <h2>Global Toggle</h2>
+      <p>Useful in tests to disable retry logic globally. When disabled, the decorated function is called directly without any retry.</p>
+      <pre><span class="fn">backon.disable</span>()   <span class="cm"># skip retry, call function directly</span>
+<span class="fn">backon.enable</span>()    <span class="cm"># re-enable retry</span></pre>
+      <p>Per-instance toggle via <code>Retrying.enabled</code>:</p>
+      <pre>r = <span class="fn">backon.Retrying</span>(<span class="fn">backon.expo</span>, exception=<span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+r.enabled = <span class="kw">False</span>
+result = <span class="fn">r.call</span>(fn)  <span class="cm"># no retry</span></pre>
+    </section>
+
+    <div style="margin: 40px 0; display: flex; gap: 12px;">
+      <a href="api.html" class="btn btn-primary">Read Full API Reference</a>
+      <a href="advanced.html" class="btn btn-outline">Advanced Features</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>
+    <svg viewBox="0 0 500 500" class="footer-logo"><defs><linearGradient id="fl"><stop offset="0%" stop-color="#4F8CFF"/><stop offset="100%" stop-color="#2563EB"/></linearGradient></defs><circle cx="250" cy="250" r="250" fill="url(#fl)"/><g fill="none" stroke="#FFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"><path d="M 205 145 L 105 250 L 205 355"/><path d="M 295 145 L 395 250 L 295 355"/></g></svg>
+    <strong>backon</strong>
+  </p>
+  <p style="margin-top: 4px;">
+    <a href="https://github.com/Llucs/backon" target="_blank">GitHub</a> &middot;
+    <a href="https://pypi.org/project/backon/" target="_blank">PyPI</a> &middot;
+    <a href="https://github.com/Llucs/backon/blob/main/LICENSE" target="_blank">MIT License</a>
+  </p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

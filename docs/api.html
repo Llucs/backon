@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Reference — backon</title>
+<meta name="description" content="Complete API reference for backon: decorators, functional API, context manager, callers, handlers, jitter, and more.">
+<link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a href="../" class="logo">
+      <svg viewBox="0 0 500 500"><defs><linearGradient id="nl"><stop offset="0%" stop-color="#4F8CFF"/><stop offset="100%" stop-color="#2563EB"/></linearGradient></defs><circle cx="250" cy="250" r="250" fill="url(#nl)"/><g fill="none" stroke="#FFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"><path d="M 205 145 L 105 250 L 205 355"/><path d="M 295 145 L 395 250 L 295 355"/></g></svg>
+      backon
+    </a>
+    <div class="nav-links">
+      <a href="quickstart.html" class="nav-link">Docs</a>
+      <a href="api.html" class="nav-link active">API</a>
+      <a href="advanced.html" class="nav-link">Advanced</a>
+      <a href="changelog.html" class="nav-link">Changelog</a>
+    </div>
+    <div class="nav-right">
+      <a href="https://github.com/Llucs/backon" class="gh-link" target="_blank">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <button class="mobile-toggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-content">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="../">Home</a> <span>/</span> <span>API Reference</span>
+    </div>
+
+    <div class="page-header">
+      <h1>API Reference</h1>
+      <p>Complete reference for all backon APIs: decorators, functional API, context manager, callable callers, wait generators, stop conditions, retry conditions, handlers, and jitter.</p>
+    </div>
+
+    <div class="toc">
+      <h3>Contents</h3>
+      <ol>
+        <li><a href="#decorators">Decorators</a></li>
+        <li><a href="#retry-with">retry_with()</a></li>
+        <li><a href="#functional-api">Functional API</a></li>
+        <li><a href="#context-manager">Context Manager</a></li>
+        <li><a href="#callers">Callers</a></li>
+        <li><a href="#wait-generators">Wait Generators</a></li>
+        <li><a href="#stop-conditions">Stop Conditions</a></li>
+        <li><a href="#retry-conditions">Retry Conditions</a></li>
+        <li><a href="#jitter">Jitter</a></li>
+        <li><a href="#handlers">Handlers</a></li>
+        <li><a href="#statistics">Retry Statistics</a></li>
+        <li><a href="#exceptions">Exceptions</a></li>
+      </ol>
+    </div>
+
+    <section id="decorators" class="section">
+      <h2>Decorators</h2>
+      <p class="section-header" style="margin-bottom: 24px;">Two decorators cover all common use cases: retry on exception and retry on predicate.</p>
+
+      <div class="api-card">
+        <details>
+          <summary><code>@backon.on_exception(wait_gen, exception, ...)</code></summary>
+          <div class="body">
+            <p>Retry when the decorated function raises one of the specified exceptions.</p>
+            <pre><span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, (<span class="tp">ValueError</span>, <span class="tp">TimeoutError</span>), max_tries=<span class="num">5</span>)
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    ...</pre>
+            <div class="table-wrap">
+            <table>
+              <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td><code>wait_gen</code></td><td><code>WaitGenerator</code></td><td>—</td><td>Wait strategy (expo, constant, fibo, etc.)</td></tr>
+                <tr><td><code>exception</code></td><td><code>type | tuple[type]</code></td><td>—</td><td>Exception class(es) to retry on</td></tr>
+                <tr><td><code>max_tries</code></td><td><code>int | Callable</code></td><td><code>None</code></td><td>Maximum number of attempts</td></tr>
+                <tr><td><code>max_time</code></td><td><code>float | timedelta | Callable</code></td><td><code>None</code></td><td>Maximum total elapsed time</td></tr>
+                <tr><td><code>jitter</code></td><td><code>Jitterer | None</code></td><td><code>full_jitter</code></td><td>Jitter function</td></tr>
+                <tr><td><code>giveup</code></td><td><code>Callable[[Exception], bool or float]</code></td><td><code>lambda e: False</code></td><td>Stop retrying for matching exceptions; return <code>float</code> to override wait</td></tr>
+                <tr><td><code>on_success</code></td><td><code>Handler | list</code></td><td><code>None</code></td><td>Called after successful attempt</td></tr>
+                <tr><td><code>on_backoff</code></td><td><code>Handler | list</code></td><td><code>None</code></td><td>Called before each retry</td></tr>
+                <tr><td><code>on_giveup</code></td><td><code>Handler | list</code></td><td><code>None</code></td><td>Called when retries exhausted</td></tr>
+                <tr><td><code>on_attempt</code></td><td><code>Handler | list</code></td><td><code>None</code></td><td>Called before each attempt</td></tr>
+                <tr><td><code>before_sleep</code></td><td><code>Handler | list</code></td><td><code>None</code></td><td>Called before sleeping</td></tr>
+                <tr><td><code>before</code></td><td><code>Handler | list</code></td><td><code>None</code></td><td>Called before each attempt (lower-level)</td></tr>
+                <tr><td><code>after</code></td><td><code>Handler | list</code></td><td><code>None</code></td><td>Called after each attempt (lower-level)</td></tr>
+                <tr><td><code>retry_error_callback</code></td><td><code>Callable[[dict], Any]</code></td><td><code>None</code></td><td>Called when retry gives up instead of raising</td></tr>
+                <tr><td><code>raise_on_giveup</code></td><td><code>bool</code></td><td><code>True</code></td><td>Raise final exception when giving up</td></tr>
+                <tr><td><code>logger</code></td><td><code>str | Logger | None</code></td><td><code>"backon"</code></td><td>Logger name or instance</td></tr>
+                <tr><td><code>backoff_log_level</code></td><td><code>int</code></td><td><code>logging.INFO</code></td><td>Log level for backoff messages</td></tr>
+                <tr><td><code>giveup_log_level</code></td><td><code>int</code></td><td><code>logging.ERROR</code></td><td>Log level for giveup messages</td></tr>
+                <tr><td><code>sleep</code></td><td><code>Callable[[float], Any]</code></td><td><code>None</code></td><td>Custom sleep function</td></tr>
+                <tr><td><code>rate_limit</code></td><td><code>RateLimiter</code></td><td><code>None</code></td><td>Rate limiter to throttle retry calls</td></tr>
+                <tr><td><code>attempt_timeout</code></td><td><code>float</code></td><td><code>None</code></td><td>Max seconds for a single attempt</td></tr>
+                <tr><td><code>**wait_gen_kwargs</code></td><td>varies</td><td>—</td><td>Extra kwargs for the wait generator</td></tr>
+              </tbody>
+            </table>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div class="api-card">
+        <details>
+          <summary><code>@backon.on_predicate(wait_gen, predicate, ...)</code></summary>
+          <div class="body">
+            <p>Retry while the predicate matches the return value. Default predicate is <code>operator.not_</code> (retry on falsy values).</p>
+            <pre><span class="kw">@</span><span class="fn">backon.on_predicate</span>(<span class="fn">backon.constant</span>, predicate=<span class="kw">lambda</span> x: x <span class="kw">is</span> <span class="kw">None</span>, max_tries=<span class="num">5</span>)
+<span class="kw">def</span> <span class="fn">poll</span>():
+    ...</pre>
+            <p>Accepts all parameters from <code>on_exception</code> except <code>exception</code> and <code>giveup</code>. Adds:</p>
+            <table>
+              <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td><code>predicate</code></td><td><code>Callable[[Any], bool]</code></td><td><code>operator.not_</code></td><td>Retry when this returns <code>True</code> for the return value</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="retry-with" class="section">
+      <h2>retry_with()</h2>
+      <p>Every decorated function (sync, async, generator) exposes a <code>.retry_with()</code> method that returns a new decorated function with overridden parameters. The original decorated function is unaffected.</p>
+      <pre><span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">5</span>)
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    ...
+
+<span class="cm"># Override max_tries</span>
+wrapped = fetch.<span class="fn">retry_with</span>(max_tries=<span class="num">3</span>)
+
+<span class="cm"># Override jitter</span>
+wrapped = fetch.<span class="fn">retry_with</span>(jitter=<span class="kw">None</span>)
+
+<span class="cm"># Override wait generator and sleep</span>
+wrapped = fetch.<span class="fn">retry_with</span>(wait_gen=<span class="fn">backon.constant</span>, interval=<span class="num">0.1</span>, sleep=<span class="kw">lambda</span> s: <span class="kw">None</span>)</pre>
+    </section>
+
+    <section id="functional-api" class="section">
+      <h2>Functional API</h2>
+      <p class="section-header" style="margin-bottom: 24px;">Call functions with retry without using a decorator. The <code>retry()</code> function automatically detects sync vs async coroutine functions.</p>
+
+      <div class="api-card">
+        <details>
+          <summary><code>backon.retry(target, wait_gen, ...)</code></summary>
+          <div class="body">
+            <pre>result = <span class="fn">backon.retry</span>(
+    target=<span class="fn">my_function</span>,
+    wait_gen=<span class="fn">backon.expo</span>,
+    exception=<span class="tp">ValueError</span>,
+    max_tries=<span class="num">3</span>,
+)</pre>
+            <p>Accepts all parameters from <code>on_exception</code> plus <code>on_predicate</code> extras, plus:</p>
+            <table>
+              <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td><code>condition</code></td><td><code>RetryCondition</code></td><td><code>None</code></td><td>Advanced retry condition object</td></tr>
+                <tr><td><code>stop</code></td><td><code>Stop</code></td><td><code>None</code></td><td>Advanced stop condition object</td></tr>
+                <tr><td><code>name</code></td><td><code>str</code></td><td><code>""</code></td><td>Identifier for the retry call</td></tr>
+              </tbody>
+            </table>
+            <p>If <code>target</code> is a coroutine function, <code>retry()</code> returns a coroutine. Otherwise it returns the result synchronously.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="context-manager" class="section">
+      <h2>Context Manager</h2>
+      <p class="section-header" style="margin-bottom: 24px;">The <code>Retrying</code> class provides both sync and async context manager interfaces.</p>
+
+      <h3><code>backon.Retrying(wait_gen, ...)</code></h3>
+      <pre><span class="kw">with</span> <span class="fn">backon.Retrying</span>(<span class="fn">backon.expo</span>, exception=<span class="tp">ValueError</span>, max_tries=<span class="num">3</span>) <span class="kw">as</span> r:
+    <span class="fn">r.call</span>(my_function)
+
+<span class="kw">async with</span> <span class="fn">backon.Retrying</span>(<span class="fn">backon.constant</span>, exception=<span class="tp">ValueError</span>, max_tries=<span class="num">3</span>, interval=<span class="num">0.5</span>) <span class="kw">as</span> r:
+    <span class="kw">await</span> <span class="fn">r.async_call</span>(my_async_function)</pre>
+
+      <h3 style="margin-top: 24px;">Methods and Properties</h3>
+      <table>
+        <thead><tr><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>call(target, *args, **kwargs)</code></td><td>Execute synchronously with retry</td></tr>
+          <tr><td><code>async_call(target, *args, **kwargs)</code></td><td>Execute asynchronously with retry</td></tr>
+          <tr><td><code>copy()</code></td><td>Return a modified copy of the Retrying instance</td></tr>
+          <tr><td><code>statistics</code></td><td>Property returning dict with attempt_number, elapsed, idle_for, start_time</td></tr>
+          <tr><td><code>call_state</code></td><td>Property returning the current RetryCallState</td></tr>
+          <tr><td><code>enabled</code></td><td>Property to enable/disable retry per-instance</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-top: 24px;">Iterator API</h3>
+      <pre><span class="kw">for</span> attempt <span class="kw">in</span> <span class="fn">backon.Retrying</span>(<span class="fn">backon.expo</span>, exception=<span class="tp">ValueError</span>, max_tries=<span class="num">3</span>):
+    <span class="kw">with</span> attempt:
+        result = <span class="fn">fetch</span>()
+    <span class="kw">if not</span> attempt.failed:
+        <span class="kw">break</span></pre>
+    </section>
+
+    <section id="callers" class="section">
+      <h2>Callers</h2>
+      <p class="section-header" style="margin-bottom: 24px;">Callable objects with pre-bound exception types via <code>.on()</code>. Accept all retry configuration options.</p>
+
+      <h3><code>backon.RetryingCaller(wait_gen, ...)</code></h3>
+      <pre>caller = <span class="fn">backon.RetryingCaller</span>(<span class="fn">backon.expo</span>, max_tries=<span class="num">3</span>)
+caller = <span class="fn">caller.on</span>(<span class="tp">ValueError</span>)
+result = <span class="fn">caller</span>(my_function, arg1, arg2)</pre>
+
+      <h3 style="margin-top: 24px;"><code>backon.AsyncRetryingCaller(wait_gen, ...)</code></h3>
+      <pre>caller = <span class="fn">backon.AsyncRetryingCaller</span>(<span class="fn">backon.expo</span>, max_tries=<span class="num">3</span>).on(<span class="tp">ValueError</span>)
+result = <span class="kw">await</span> <span class="fn">caller</span>(my_async_function, arg1, arg2)</pre>
+
+      <table>
+        <thead><tr><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>.on(exception)</code></td><td>Return a copy bound to the given exception type(s)</td></tr>
+          <tr><td><code>.copy()</code></td><td>Return a modified copy with overridden parameters</td></tr>
+          <tr><td><code>__call__(target, *args, **kwargs)</code></td><td>Execute with retry</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="wait-generators" class="section">
+      <h2>Wait Generators</h2>
+      <p>All wait generators are callables that produce a sequence of wait times. Pass extra kwargs (e.g. <code>interval=0.5</code>, <code>base=3</code>) as <code>**wait_gen_kwargs</code> to decorators and functions.</p>
+
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Generator</th><th>Signature</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>expo</code></td><td><code>(base=2, factor=1, max_value=None)</code></td><td>Exponential backoff: <code>factor * base^n</code>. The standard exponential backoff strategy.</td></tr>
+          <tr><td><code>constant</code></td><td><code>(interval=1)</code></td><td>Fixed interval. Accepts <code>float</code> or <code>Sequence[float]</code> for varied intervals per attempt.</td></tr>
+          <tr><td><code>fibo</code></td><td><code>(max_value=None)</code></td><td>Fibonacci sequence: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55…</td></tr>
+          <tr><td><code>runtime</code></td><td><code>(value=Callable)</code></td><td>Dynamic wait time computed from the return value or exception. Useful for <code>Retry-After</code> headers.</td></tr>
+          <tr><td><code>decay</code></td><td><code>(initial=1, decay=1, min=None)</code></td><td>Exponential decay: <code>initial * e^(-t * decay_factor)</code>. Waits decrease over time.</td></tr>
+          <tr><td><code>wait_random_exponential</code></td><td><code>(multiplier=1, max=None, base=2, min=0)</code></td><td>Randomized exponential backoff: uniform random between 0 and the exponential value.</td></tr>
+          <tr><td><code>wait_incrementing</code></td><td><code>(start=1, increment=1, max=None)</code></td><td>Linear increment: <code>start + n * increment</code>. Each attempt waits longer by a fixed increment.</td></tr>
+          <tr><td><code>wait_chain</code></td><td><code>(*generators)</code></td><td>Sequentially play through multiple generators. Cycles through them in order.</td></tr>
+          <tr><td><code>wait_combine</code></td><td><code>(*generators)</code></td><td>Sum all generator wait values per step. Unlike <code>+</code> which chains sequentially.</td></tr>
+          <tr><td><code>wait_exception</code></td><td><code>(value=Callable)</code></td><td>Dynamic wait based on the caught exception object. Receives the exception as input.</td></tr>
+          <tr><td><code>wait_random</code></td><td><code>(min=0, max=1)</code></td><td>Uniform random wait between min and max. Useful for simple jitter.</td></tr>
+          <tr><td><code>wait_exponential_jitter</code></td><td><code>(initial=1, max=60, base=2, jitter=1)</code></td><td>Exponential backoff with added random jitter: <code>delay + random(0, jitter)</code>.</td></tr>
+          <tr><td><code>wait_none</code></td><td><code>()</code></td><td>Always returns 0 — no wait between retries. Useful for testing.</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3 style="margin-top: 24px;">Composition</h3>
+      <p>Combine wait generators with <code>+</code> (sequential chain) or <code>wait_combine</code> (sum per step):</p>
+      <pre><span class="cm"># Sequential: wait_chain(expo, constant)</span>
+wait_strategy = <span class="fn">backon.expo</span>(base=<span class="num">3</span>) + <span class="fn">backon.constant</span>(interval=<span class="num">0.5</span>)
+
+<span class="cm"># Sum per step: wait_combine(expo, constant)</span>
+<span class="kw">from</span> <span class="fn">backon</span> <span class="kw">import</span> <span class="fn">wait_combine</span>
+
+wait_strategy = <span class="fn">wait_combine</span>(<span class="fn">backon.expo</span>, <span class="fn">backon.constant</span>)</pre>
+      <p class="alert alert-info"><code>wait_combine</code> calls all sub-generators with the same kwargs on each step and returns the sum — useful when you want combined behaviors on every retry rather than a sequence.</p>
+    </section>
+
+    <section id="stop-conditions" class="section">
+      <h2>Stop Conditions</h2>
+      <p>Stop conditions determine when retry should cease. They can be composed with <code>|</code> (any) and <code>&amp;</code> (all).</p>
+
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Condition</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>stop_after_attempt(max_attempts)</code></td><td>Stop after N attempts</td></tr>
+          <tr><td><code>stop_after_delay(max_delay)</code></td><td>Stop after total elapsed time exceeds <code>max_delay</code> seconds</td></tr>
+          <tr><td><code>stop_before_delay(max_delay)</code></td><td>Stop if the upcoming wait would make <code>elapsed + wait >= max_delay</code></td></tr>
+          <tr><td><code>stop_all(*stops)</code></td><td>Stop when all sub-conditions are met</td></tr>
+          <tr><td><code>stop_any(*stops)</code></td><td>Stop when any sub-condition is met</td></tr>
+          <tr><td><code>stop_never()</code></td><td>Never stop (retry indefinitely)</td></tr>
+          <tr><td><code>stop_when_event_set(event)</code></td><td>Stop when a <code>threading.Event</code> is set</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <pre>stop = <span class="fn">stop_after_attempt</span>(<span class="num">5</span>) | <span class="fn">stop_after_delay</span>(<span class="num">30.0</span>)</pre>
+    </section>
+
+    <section id="retry-conditions" class="section">
+      <h2>Retry Conditions</h2>
+      <p>Retry conditions determine whether a retry should happen. They can be composed with <code>|</code> and <code>&amp;</code>.</p>
+
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Condition</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>retry_if_exception_type(exc_types)</code></td><td>Retry if exception is an instance of given type(s)</td></tr>
+          <tr><td><code>retry_if_exception(predicate)</code></td><td>Retry if the exception matches a custom predicate</td></tr>
+          <tr><td><code>retry_if_exception_message(msg, match=None)</code></td><td>Retry if exception message contains a string (or matches regex with <code>match="re"</code>)</td></tr>
+          <tr><td><code>retry_if_result(predicate)</code></td><td>Retry if the return value matches a predicate</td></tr>
+          <tr><td><code>retry_if_not_result(predicate)</code></td><td>Retry if the return value does NOT match a predicate</td></tr>
+          <tr><td><code>retry_all(*conditions)</code></td><td>Retry only when all conditions pass</td></tr>
+          <tr><td><code>retry_any(*conditions)</code></td><td>Retry when any condition passes</td></tr>
+          <tr><td><code>retry_always()</code></td><td>Always retry</td></tr>
+          <tr><td><code>retry_never()</code></td><td>Never retry</td></tr>
+          <tr><td><code>retry_if_exception_cause_type(t)</code></td><td>Retry if the exception's cause chain matches given type(s)</td></tr>
+          <tr><td><code>retry_if_not_exception_type(t)</code></td><td>Retry if exception is NOT an instance of the given type(s)</td></tr>
+          <tr><td><code>retry_if_not_exception_message(msg, regex=False)</code></td><td>Retry if exception message does NOT contain the given string</td></tr>
+          <tr><td><code>retry_unless_exception_type(t)</code></td><td>Alias for <code>retry_if_not_exception_type</code></td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <pre>condition = <span class="fn">retry_all</span>(
+    <span class="fn">retry_if_exception_type</span>(<span class="tp">HTTPError</span>),
+    <span class="fn">retry_if_exception_message</span>(<span class="str">"429"</span>),
+)</pre>
+    </section>
+
+    <section id="jitter" class="section">
+      <h2>Jitter</h2>
+      <p>Jitter adds randomness to wait times to avoid thundering herd problems.</p>
+
+      <table>
+        <thead><tr><th>Jitter</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td><code>backon.full_jitter</code></td><td>Random value between 0 and the calculated wait time (default)</td></tr>
+          <tr><td><code>backon.random_jitter</code></td><td>Adds <code>random()</code> to the calculated wait time (~+0.5s on average)</td></tr>
+          <tr><td><code>None</code></td><td>No jitter — deterministic wait times</td></tr>
+        </tbody>
+      </table>
+
+      <pre><span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, jitter=<span class="fn">backon.full_jitter</span>)
+<span class="kw">def</span> <span class="fn">f</span>():
+    ...</pre>
+    </section>
+
+    <section id="handlers" class="section">
+      <h2>Handlers</h2>
+      <p>Handlers are callbacks that receive a <code>details</code> dictionary with contextual information about the retry attempt.</p>
+
+      <pre><span class="kw">def</span> <span class="fn">handler</span>(details):
+    <span class="fn">print</span>(<span class="str">f"Attempt {details['tries']}, elapsed {details['elapsed']:.2f}s"</span>)
+
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(
+    <span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>,
+    on_attempt=handler,
+    on_backoff=handler,
+    on_success=handler,
+    on_giveup=handler,
+)
+<span class="kw">def</span> <span class="fn">f</span>():
+    ...</pre>
+
+      <h3 style="margin-top: 24px;">Available Keys in <code>details</code></h3>
+      <table>
+        <thead><tr><th>Key</th><th>Available in</th></tr></thead>
+        <tbody>
+          <tr><td><code>target</code></td><td>All handlers</td></tr>
+          <tr><td><code>args</code>, <code>kwargs</code></td><td>All handlers</td></tr>
+          <tr><td><code>tries</code></td><td>All handlers</td></tr>
+          <tr><td><code>elapsed</code></td><td>All handlers</td></tr>
+          <tr><td><code>value</code></td><td><code>on_success</code>, <code>on_backoff</code>, <code>on_giveup</code></td></tr>
+          <tr><td><code>exception</code></td><td><code>on_backoff</code>, <code>on_giveup</code></td></tr>
+          <tr><td><code>wait</code></td><td><code>on_backoff</code>, <code>before_sleep</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="statistics" class="section">
+      <h2>Retry Statistics</h2>
+      <p>Access detailed statistics about the retry execution.</p>
+
+      <pre>r = <span class="fn">backon.Retrying</span>(<span class="fn">backon.expo</span>, exception=<span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+result = <span class="fn">r.call</span>(fetch)
+
+<span class="fn">print</span>(r.statistics)
+<span class="cm"># {'start_time': ..., 'attempt_number': 2, 'idle_for': 1.5, 'elapsed': 2.3}</span>
+
+<span class="fn">print</span>(r.call_state)
+<span class="cm"># RetryCallState(fn=..., attempt_number=2, ...)</span></pre>
+
+      <h3 style="margin-top: 24px;">Context Inspection</h3>
+      <p>Check if code is running inside a retry and get the current attempt number anywhere in the call stack:</p>
+      <pre><span class="kw">from</span> <span class="fn">backon</span> <span class="kw">import</span> <span class="fn">is_retrying</span>, <span class="fn">get_attempt_number</span>
+
+<span class="kw">def</span> <span class="fn">log_attempt</span>():
+    <span class="kw">if</span> <span class="fn">is_retrying</span>():
+        <span class="fn">print</span>(<span class="str">f"This is attempt #{get_attempt_number()}"</span>)</pre>
+      <p>Uses <code>contextvars</code> — thread-safe and async-safe.</p>
+    </section>
+
+    <section id="exceptions" class="section">
+      <h2>Exceptions</h2>
+      <table>
+        <thead><tr><th>Exception</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>TryAgain</code></td><td>Raise inside a retried function to force an immediate retry, bypassing conditions and stop logic</td></tr>
+          <tr><td><code>RetryError</code></td><td>Raised when retry gives up. Wraps the last attempt's exception.</td></tr>
+          <tr><td><code>AttemptTimeoutError</code></td><td>Raised when a single attempt exceeds the configured <code>attempt_timeout</code></td></tr>
+          <tr><td><code>CircuitOpenError</code></td><td>Raised when the circuit breaker is OPEN and rejects a call</td></tr>
+          <tr><td><code>HedgeError</code></td><td>Raised when all hedged requests fail</td></tr>
+          <tr><td><code>RateLimitError</code></td><td>Raised by direct <code>RateLimiter</code> usage when rate limit exceeded</td></tr>
+          <tr><td><code>RetryAssertionError</code></td><td>Raised by <code>assert_retried</code> / <code>assert_not_retried</code> when assertions fail</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div style="margin: 40px 0; display: flex; gap: 12px;">
+      <a href="quickstart.html" class="btn btn-outline">Quickstart</a>
+      <a href="advanced.html" class="btn btn-primary">Advanced Features</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>
+    <svg viewBox="0 0 500 500" class="footer-logo"><defs><linearGradient id="fl"><stop offset="0%" stop-color="#4F8CFF"/><stop offset="100%" stop-color="#2563EB"/></linearGradient></defs><circle cx="250" cy="250" r="250" fill="url(#fl)"/><g fill="none" stroke="#FFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"><path d="M 205 145 L 105 250 L 205 355"/><path d="M 295 145 L 395 250 L 295 355"/></g></svg>
+    <strong>backon</strong>
+  </p>
+  <p style="margin-top: 4px;">
+    <a href="https://github.com/Llucs/backon" target="_blank">GitHub</a> &middot;
+    <a href="https://pypi.org/project/backon/" target="_blank">PyPI</a> &middot;
+    <a href="https://github.com/Llucs/backon/blob/main/LICENSE" target="_blank">MIT License</a>
+  </p>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

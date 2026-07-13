@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>backon — Function Decoration for Backoff and Retry</title>
+<meta name="description" content="backon is a zero-dependency Python library for retry with exponential backoff — modern, fast, with full async support.">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a href="/" class="logo">
+      <svg viewBox="0 0 500 500"><defs><linearGradient id="nl"><stop offset="0%" stop-color="#4F8CFF"/><stop offset="100%" stop-color="#2563EB"/></linearGradient></defs><circle cx="250" cy="250" r="250" fill="url(#nl)"/><g fill="none" stroke="#FFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"><path d="M 205 145 L 105 250 L 205 355"/><path d="M 295 145 L 395 250 L 295 355"/></g></svg>
+      backon
+    </a>
+    <div class="nav-links">
+      <a href="docs/quickstart.html" class="nav-link">Docs</a>
+      <a href="docs/api.html" class="nav-link">API</a>
+      <a href="docs/advanced.html" class="nav-link">Advanced</a>
+      <a href="docs/changelog.html" class="nav-link">Changelog</a>
+    </div>
+    <div class="nav-right">
+      <a href="https://github.com/Llucs/backon" class="gh-link" target="_blank">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <button class="mobile-toggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-content wide">
+  <section class="hero">
+    <img src="assets/logo.svg" class="logo-big" alt="backon logo">
+    <h1>backon</h1>
+    <p>Function decoration for backoff and retry — modern, fast, zero dependencies.</p>
+    <div class="badges">
+      <img src="https://github.com/Llucs/backon/actions/workflows/ci.yml/badge.svg" alt="CI">
+      <img src="https://codecov.io/gh/Llucs/backon/branch/main/graph/badge.svg" alt="Coverage">
+      <img src="https://img.shields.io/pypi/v/backon.svg" alt="PyPI">
+      <img src="https://img.shields.io/pypi/pyversions/backon.svg" alt="Python Versions">
+      <img src="https://img.shields.io/pypi/l/backon.svg" alt="License">
+      <img src="https://img.shields.io/pypi/dm/backon.svg" alt="Downloads">
+    </div>
+    <div class="btns">
+      <a href="docs/quickstart.html" class="btn btn-primary">Get Started</a>
+      <a href="https://github.com/Llucs/backon" class="btn btn-outline" target="_blank">View on GitHub</a>
+      <a href="https://pypi.org/project/backon/" class="btn btn-outline" target="_blank">pip install backon</a>
+    </div>
+  </section>
+
+  <div class="container">
+    <section class="section">
+      <div class="section-header">
+        <h2>What is backon?</h2>
+        <p>A modern evolution of <a href="https://github.com/litl/backoff" target="_blank">backoff</a> — a zero-dependency Python library that makes it trivial to add retry with exponential backoff to any function. Decorator, functional, and context manager APIs for both sync and async code.</p>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="icon">⚡</div>
+          <h3>Blazing Fast</h3>
+          <p>~3&mu;s fast path for simple retries. Class-based wait generators are ~15% faster than generator-based. 1.2&times;–3.6&times; faster than tenacity.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🎯</div>
+          <h3>Four APIs</h3>
+          <p>Decorator (<code>@on_exception</code>), functional (<code>retry()</code>), context manager (<code>Retrying</code>), and callable (<code>RetryingCaller</code>). One library, all the flexibility you need.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔌</div>
+          <h3>Zero Dependencies</h3>
+          <p>Pure Python using only the standard library. No external packages required. Optional integrations for Prometheus, OpenTelemetry, structlog, and trio.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔄</div>
+          <h3>Async Native</h3>
+          <p>Same API works for <code>async def</code> functions, sync generators, and async generators — all retried transparently.</p>
+        </div>
+        <div class="card">
+          <div class="icon">📦</div>
+          <h3>Full Type Hints</h3>
+          <p>Validated with mypy, includes <code>py.typed</code> PEP 561 marker, modern PEP 621 packaging with PDM build system.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🧪</div>
+          <h3>Test Friendly</h3>
+          <p>Global <code>disable()</code>/<code>enable()</code>, context managers for testing, assertion helpers, custom sleep injection, and <code>test_config()</code> for full control.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Features at a Glance</h2>
+      </div>
+      <ul class="feature-list">
+        <li>Zero dependencies — pure Python, stdlib only</li>
+        <li>Four APIs — decorator, functional, context manager, callable</li>
+        <li>Sync and async support with transparent async detection</li>
+        <li>Generator support — sync and async generators retried from scratch</li>
+        <li>Full type hints with mypy validation and py.typed marker</li>
+        <li>Global toggle — <code>backon.disable()</code> / <code>backon.enable()</code></li>
+        <li>Custom sleep — inject your own sleep function for testing</li>
+        <li>12+ wait strategies — expo, constant, fibo, decay, runtime, and more</li>
+        <li><code>wait_combine()</code> — sum multiple wait strategies per retry step</li>
+        <li><code>retry_with()</code> — override retry parameters per-call on decorated functions</li>
+        <li>Jitter — full jitter, random jitter, or none</li>
+        <li>Rich callbacks — on_attempt, on_backoff, on_success, on_giveup, before_sleep</li>
+        <li>Circuit breaker — CLOSED/OPEN/HALF_OPEN states with automatic recovery</li>
+        <li>Hedging — concurrent retry requests, first-success-wins</li>
+        <li>Prometheus / OpenTelemetry / structlog metrics — optional, zero hard dependencies</li>
+        <li>Testing module — disable_retries, limit_retries, remove_backoff, assert_retried</li>
+        <li>Trio support — retry with trio async framework</li>
+        <li>Operator overloading — compose stops with <code>|</code> / <code>&amp;</code>, waits with <code>+</code></li>
+        <li>Iterator API — <code>for attempt in Retrying(...)</code></li>
+        <li>Rate limiter — sliding window throttle integrated into all retry loops</li>
+        <li>Per-attempt timeout — via ThreadPoolExecutor / asyncio.wait_for</li>
+        <li>Hot loop detection — warns on 5+ retries in under 100ms</li>
+        <li>Context inspection — <code>is_retrying()</code> / <code>get_attempt_number()</code></li>
+        <li>Dynamic backoff — return float from giveup callback for Retry-After headers</li>
+      </ul>
+      <div style="margin-top: 24px;">
+        <a href="docs/api.html" class="btn btn-outline">Explore Full API</a>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Performance</h2>
+        <p>backon is faster than both tenacity and the original backoff library.</p>
+      </div>
+      <div class="grid-3">
+        <div class="stat-card">
+          <div class="stat-value">~3&mu;s</div>
+          <div class="stat-label">Fast path success call</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">~22&mu;s</div>
+          <div class="stat-label">Standard path success call</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">1.2&times; – 3.6&times;</div>
+          <div class="stat-label">Faster than tenacity</div>
+        </div>
+      </div>
+      <p style="font-size: 14px; color: var(--text-dim); margin-top: 12px;">
+        The fast path avoids <code>RetryState</code> / <code>Attempt</code> dataclass allocations, <code>_decide_outcome()</code>, <code>_call_hdlrs</code>, and <code>to_details()</code> dict creation. Auto-detected via <code>_is_fast_path()</code> gate when no handlers, jitter, rate limiter, or attempt timeout are configured.
+      </p>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Quick Example</h2>
+      </div>
+      <div class="grid-2">
+        <div>
+          <h3 style="margin-bottom: 8px;">Retry on Exception</h3>
+          <pre><span class="kw">import</span> <span class="fn">backon</span>
+
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+<span class="kw">def</span> <span class="fn">fetch_data</span>():
+    <span class="kw">return</span> <span class="fn">api.call</span>()</pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom: 8px;">Retry on Predicate</h3>
+          <pre><span class="kw">@</span><span class="fn">backon.on_predicate</span>(<span class="fn">backon.constant</span>, max_tries=<span class="num">5</span>, interval=<span class="num">0.5</span>)
+<span class="kw">def</span> <span class="fn">poll_status</span>():
+    <span class="kw">return</span> <span class="fn">check_ready</span>()</pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom: 8px;">Functional API</h3>
+          <pre>result = <span class="fn">backon.retry</span>(
+    fetch_data, <span class="fn">backon.expo</span>,
+    exception=<span class="tp">ValueError</span>, max_tries=<span class="num">3</span>,
+)</pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom: 8px;">Context Manager</h3>
+          <pre><span class="kw">with</span> <span class="fn">backon.Retrying</span>(<span class="fn">backon.expo</span>, exception=<span class="tp">ValueError</span>, max_tries=<span class="num">3</span>) <span class="kw">as</span> r:
+    result = <span class="fn">r.call</span>(fetch_data)</pre>
+        </div>
+      </div>
+      <div style="margin-top: 16px;">
+        <a href="docs/quickstart.html" class="btn btn-primary">Read Full Quickstart</a>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Wait Strategies</h2>
+        <p>Choose from 12+ built-in wait strategies or compose your own with <code>+</code> and <code>wait_combine()</code>.</p>
+      </div>
+      <div class="grid-auto">
+        <div class="card"><h3><code>expo</code></h3><p>Exponential backoff: <code>factor &times; base^n</code></p></div>
+        <div class="card"><h3><code>constant</code></h3><p>Fixed interval, accepts sequences</p></div>
+        <div class="card"><h3><code>fibo</code></h3><p>Fibonacci: 1, 1, 2, 3, 5, 8…</p></div>
+        <div class="card"><h3><code>runtime</code></h3><p>Dynamic from return/exception</p></div>
+        <div class="card"><h3><code>decay</code></h3><p>Exponential decay</p></div>
+        <div class="card"><h3><code>wait_random_exponential</code></h3><p>Randomized exponential</p></div>
+        <div class="card"><h3><code>wait_incrementing</code></h3><p>Linear increment</p></div>
+        <div class="card"><h3><code>wait_chain</code></h3><p>Sequential play-through</p></div>
+        <div class="card"><h3><code>wait_combine</code></h3><p>Sum per step</p></div>
+        <div class="card"><h3><code>wait_exception</code></h3><p>Dynamic from exception</p></div>
+        <div class="card"><h3><code>wait_random</code></h3><p>Uniform random</p></div>
+        <div class="card"><h3><code>wait_exponential_jitter</code></h3><p>Exponential + jitter</p></div>
+        <div class="card"><h3><code>wait_none</code></h3><p>No wait at all</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Advanced Features</h2>
+        <p>Enterprise-grade resilience patterns built in.</p>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="icon">🔒</div>
+          <h3>Circuit Breaker <span class="tag tag-pro">PRO</span></h3>
+          <p>CLOSED / OPEN / HALF_OPEN states with configurable failure threshold, recovery timeout, and half-open max calls. Thread-safe.</p>
+        </div>
+        <div class="card">
+          <div class="icon">⚡</div>
+          <h3>Hedging <span class="tag tag-pro">PRO</span></h3>
+          <p>Concurrent retry requests using ThreadPoolExecutor or asyncio tasks. First-success-wins strategy with configurable concurrency.</p>
+        </div>
+        <div class="card">
+          <div class="icon">📊</div>
+          <h3>Metrics <span class="tag tag-pro">PRO</span></h3>
+          <p>Prometheus, OpenTelemetry, and structlog collectors. Auto-detected at import time. Tracks attempts, successes, failures, hedge requests.</p>
+        </div>
+        <div class="card">
+          <div class="icon">⏱️</div>
+          <h3>Rate Limiter</h3>
+          <p>Sliding window rate limiter. Throttles calls to avoid overwhelming backends. Integrated into all retry loops.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔎</div>
+          <h3>Context Inspection</h3>
+          <p><code>is_retrying()</code> / <code>get_attempt_number()</code> via <code>contextvars</code> — thread-safe and async-safe.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🛠️</div>
+          <h3>Trio Support</h3>
+          <p>Retry with trio async framework via the <code>backon._trio</code> module.</p>
+        </div>
+      </div>
+      <div style="margin-top: 16px;">
+        <a href="docs/advanced.html" class="btn btn-outline">Explore Advanced Features</a>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Migrate from backoff</h2>
+        <p>Near-drop-in replacement. Just change your imports.</p>
+      </div>
+      <div class="side-by-side">
+        <pre><span class="cm"># Before (backoff)</span>
+<span class="kw">import</span> <span class="fn">backoff</span>
+
+<span class="kw">@</span><span class="fn">backoff.on_exception</span>(<span class="fn">backoff.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    ...</pre>
+        <pre><span class="cm"># After (backon)</span>
+<span class="kw">import</span> <span class="fn">backon</span>
+
+<span class="kw">@</span><span class="fn">backon.on_exception</span>(<span class="fn">backon.expo</span>, <span class="tp">ValueError</span>, max_tries=<span class="num">3</span>)
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    ...</pre>
+      </div>
+      <p style="margin-top: 12px; font-size: 14px; color: var(--text-dim);">
+        Plus new features: context manager, functional API, circuit breaker, hedging, metrics, operator composition, and more.
+      </p>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <p>
+    <svg viewBox="0 0 500 500" class="footer-logo"><defs><linearGradient id="fl"><stop offset="0%" stop-color="#4F8CFF"/><stop offset="100%" stop-color="#2563EB"/></linearGradient></defs><circle cx="250" cy="250" r="250" fill="url(#fl)"/><g fill="none" stroke="#FFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"><path d="M 205 145 L 105 250 L 205 355"/><path d="M 295 145 L 395 250 L 295 355"/></g></svg>
+    <strong>backon</strong> — Function decoration for backoff and retry
+  </p>
+  <p style="margin-top: 8px;">
+    Created by <a href="https://github.com/Llucs" target="_blank">Llucs</a> &middot;
+    <a href="https://github.com/Llucs/backon/blob/main/LICENSE" target="_blank">MIT License</a> &middot;
+    <a href="https://github.com/Llucs/backon" target="_blank">GitHub</a> &middot;
+    <a href="https://pypi.org/project/backon/" target="_blank">PyPI</a>
+  </p>
+  <p style="margin-top: 4px; font-size: 12px;">
+    Version 4.2.3 &middot; Python 3.10+ &middot; Zero dependencies
+  </p>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>

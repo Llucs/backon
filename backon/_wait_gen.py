@@ -15,9 +15,10 @@ class _Wait:
     def next(self, send_value=None) -> float:
         raise NotImplementedError
 
-    def __call__(self, **kwargs: Any) -> _Wait:
+    def __call__(self, *args: Any, **kwargs: Any) -> _Wait:
         merged = {**self._kwargs, **kwargs}
-        return self.__class__(*self._args, **merged)
+        new_args = args if args else self._args
+        return self.__class__(*new_args, **merged)
 
     def __add__(self, other: _Wait) -> _CombinedWait:
         if isinstance(other, _CombinedWait):

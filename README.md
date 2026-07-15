@@ -842,6 +842,14 @@ pdm run pytest tests/ -q
 
 ---
 
+## Contributors
+
+<a href="https://github.com/Llucs/backon/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Llucs/backon" alt="Contributors" />
+</a>
+
+---
+
 ## License
 
 [MIT](https://github.com/Llucs/backon/blob/main/LICENSE)

@@ -1,3 +1,8 @@
+## 4.2.4 - 2026-07-15
+
+- Fix `_maybe_call` swallowing legitimate `TypeError` exceptions from called functions (#48). Previously all `TypeError` exceptions were caught and silenced; now only argument-mismatch errors cause the fallback to return the callable, while real bugs propagate.
+- Fix `_Wait.__call__` not accepting positional arguments (#49). Calling e.g. `constant(0.05)` or `expo(10)` no longer raises `TypeError`. Pre-configured kwargs (e.g. `expo(max_value=10)`) are preserved when chained with positional args.
+
 ## 4.2.3 - 2026-07-10
 
 - Documentation: rewrite the `AGENTS.md` `Architecture` section to match the actual repository layout (#24). The previous text pointed AI agents and contributors to `backon/_sync.py`, `backon/_async.py`, and a non-existent `backon/_retry.py` for retry logic; those are now deprecation stubs / non-existent files. The new section documents the `_retry/` subpackage (`_api.py`, `_classes.py`, `_decide.py`, `_fast.py`, `_helpers.py`, `_inner.py`, `_loops.py`) alongside `_circuit_breaker.py`, `_conditions.py`, `_context.py`, `_hedging.py`, `_instrumentation.py`, `_rate_limiter.py`, `_state.py`, `_testing.py`, `_trio.py`, and the `py.typed` PEP 561 marker, and explicitly calls out `_sync.py` / `_async.py` as `DeprecationWarning` stubs. Notes that `tests/` uses feature-oriented naming rather than a one-`test_`-per-source mirror.

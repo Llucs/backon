@@ -1,4 +1,11 @@
-from backon._wait_gen import constant, expo, fibo, runtime
+from backon._wait_gen import (
+    constant,
+    expo,
+    fibo,
+    runtime,
+    wait_incrementing,
+    wait_random,
+)
 
 
 class TestWaitGen:
@@ -71,3 +78,43 @@ class TestWaitGen:
         assert g.next(1) == 2
         assert g.next(3) == 6
         assert g.next(10) == 20
+
+
+class TestPositionalArgs:
+    def test_constant_positional(self):
+        g = constant(0.05)
+        assert g.next() == 0.05
+
+    def test_expo_positional(self):
+        g = expo(10)
+        assert g.next() == 1
+
+    def test_expo_positional_with_kwarg(self):
+        g = expo(3, factor=2)
+        assert g.next() == 2
+        assert g.next() == 6
+
+    def test_fibo_positional(self):
+        g = fibo(100)
+        assert g.next() == 1
+
+    def test_wait_incrementing_positional(self):
+        g = wait_incrementing(2)
+        assert g.next() == 2
+
+    def test_wait_random_positional(self):
+        g = wait_random(0, 5)
+        assert 0 <= g.next() <= 5
+
+    def test_kwargs_still_work(self):
+        g = expo(base=3, factor=2)
+        assert g.next() == 2
+        assert g.next() == 6
+
+    def test_preconfigured_with_positional(self):
+        w = expo(max_value=10)
+        g = w(3)
+        assert g.next() == 1
+        assert g.next() == 3
+        assert g.next() == 9
+        assert g.next() == 10

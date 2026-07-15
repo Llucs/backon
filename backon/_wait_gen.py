@@ -18,6 +18,11 @@ class _Wait:
     def __call__(self, *args: Any, **kwargs: Any) -> _Wait:
         merged = {**self._kwargs, **kwargs}
         new_args = args if args else self._args
+        if args:
+            param_order = list(self._kwargs.keys())
+            for i in range(len(args)):
+                if i < len(param_order):
+                    merged.pop(param_order[i], None)
         return self.__class__(*new_args, **merged)
 
     def __add__(self, other: _Wait) -> _CombinedWait:

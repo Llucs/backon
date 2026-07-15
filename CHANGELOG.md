@@ -1,7 +1,7 @@
 ## 4.2.4 - 2026-07-15
 
-- Fix `_maybe_call` swallowing legitimate `TypeError` exceptions from called functions (#48). Previously all `TypeError` exceptions were caught and silenced; now only argument-mismatch errors cause the fallback to return the callable, while real bugs propagate.
-- Fix `_Wait.__call__` not accepting positional arguments (#49). Calling e.g. `constant(0.05)` or `expo(10)` no longer raises `TypeError`. Pre-configured kwargs (e.g. `expo(max_value=10)`) are preserved when chained with positional args.
+- Fix `_maybe_call` swallowing legitimate `TypeError` exceptions from called functions (#48). Previously all `TypeError` exceptions were caught and silenced; now only argument-mismatch errors cause the fallback to return the callable, while real bugs propagate. (fazalpsinfo-cmyk)
+- Fix `_Wait.__call__` not accepting positional arguments (#49). Calling e.g. `constant(0.05)` or `expo(10)` no longer raises `TypeError`. Pre-configured kwargs (e.g. `expo(max_value=10)`) are preserved when chained with positional args. (fazalpsinfo-cmyk)
 
 ## 4.2.3 - 2026-07-10
 

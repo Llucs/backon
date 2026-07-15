@@ -36,10 +36,15 @@ def _maybe_call(f, *args, **kwargs):
     if callable(f):
         try:
             return f(*args, **kwargs)
-        except TypeError:
-            return f
-    else:
-        return f
+        except TypeError as e:
+            # Only catch TypeError caused by the value not being callable
+            # with the given arguments. Legitimate errors from the called
+            # function should propagate.
+            err_msg = str(e)
+            if "required positional argument" in err_msg or "takes " in err_msg:
+                return f
+            raise
+    return f
 
 
 def _init_wait_gen(wait_gen, wait_gen_kwargs):

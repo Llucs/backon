@@ -18,15 +18,18 @@ from backon._state import TryAgain
 
 
 class _FastOutcome:
-    __slots__ = ("exception", "value")
+    __slots__ = ("exception", "value", "wait", "elapsed", "tries")
 
     def __init__(self):
         self.exception = None
         self.value = None
+        self.wait = 0.0
+        self.elapsed = 0.0
+        self.tries = 0
 
 
 class _FastState:
-    __slots__ = ("elapsed", "outcome", "tries")
+    __slots__ = ("elapsed", "outcome", "tries", "start_time", "idle_for")
 
     def __init__(self):
         self.tries = 0

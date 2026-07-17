@@ -3,6 +3,7 @@
 ## Versioning
 
 - Update `version` in `pyproject.toml` on every change — this is the single source of truth.
+- When updating the version, also update `CHANGELOG.md` with the new version, date, and changes.
 - `__version__` in `backon/__init__.py` is read dynamically from `importlib.metadata`.
 - Follow [SemVer](https://semver.org/): bump major for breaking changes, minor for features, patch for fixes.
 

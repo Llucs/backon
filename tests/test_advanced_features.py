@@ -669,6 +669,30 @@ class TestRetryAttempt:
             raise RuntimeError("caught")
         assert attempt.failed
 
+    def test_attempt_does_not_suppress_keyboard_interrupt(self):
+        attempt = _RetryAttempt()
+        with pytest.raises(KeyboardInterrupt):
+            with attempt:
+                raise KeyboardInterrupt()
+        assert not attempt.failed
+        assert attempt.exception is None
+
+    def test_attempt_does_not_suppress_system_exit(self):
+        attempt = _RetryAttempt()
+        with pytest.raises(SystemExit):
+            with attempt:
+                raise SystemExit(1)
+        assert not attempt.failed
+        assert attempt.exception is None
+
+    def test_attempt_does_not_suppress_generator_exit(self):
+        attempt = _RetryAttempt()
+        with pytest.raises(GeneratorExit):
+            with attempt:
+                raise GeneratorExit()
+        assert not attempt.failed
+        assert attempt.exception is None
+
     def test_attempt_multiple_calls(self):
         attempt = _RetryAttempt()
         with attempt:

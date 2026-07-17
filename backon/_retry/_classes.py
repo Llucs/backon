@@ -35,7 +35,7 @@ class _RetryAttempt:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is not None:
+        if exc_type is not None and issubclass(exc_type, Exception):
             self._exception = exc_val
             return True
         return False

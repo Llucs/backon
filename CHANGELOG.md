@@ -1,3 +1,7 @@
+## 4.2.5 - 2026-07-17
+
+- Fix `_RetryAttempt.__exit__` swallowing `KeyboardInterrupt`, `SystemExit`, and `GeneratorExit` (#39). `__exit__` now only suppresses `Exception` subclasses, letting `BaseException` subclasses propagate naturally. (codevoyager-ai-dev)
+
 ## 4.2.4 - 2026-07-15
 
 - Fix `_maybe_call` swallowing legitimate `TypeError` exceptions from called functions (#48). Previously all `TypeError` exceptions were caught and silenced; now only argument-mismatch errors cause the fallback to return the callable, while real bugs propagate. (fazalpsinfo-cmyk)

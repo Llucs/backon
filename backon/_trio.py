@@ -96,6 +96,7 @@ def retry_predicate(
         tries = 0
         start = _now()
         wait = _init_wait_gen(wait_gen, wait_gen_kwargs)
+        ret = None
         while True:
             tries += 1
             elapsed = _elapsed(start)
@@ -110,13 +111,14 @@ def retry_predicate(
             await _call_handlers(on_attempt, **details)
 
             try:
-                if attempt_timeout is not None:
-                    with trio.fail_after(attempt_timeout):
+                try:
+                    if attempt_timeout is not None:
+                        with trio.fail_after(attempt_timeout):
+                            ret = await target(*args, **kwargs)
+                    else:
                         ret = await target(*args, **kwargs)
-                else:
-                    ret = await target(*args, **kwargs)
-            except trio.TooSlowError:
-                raise AttemptTimeoutError() from None
+                except trio.TooSlowError:
+                    raise AttemptTimeoutError() from None
             except AttemptTimeoutError:
                 max_tries_exceeded = tries == max_tries_value
                 max_time_exceeded = (
@@ -218,13 +220,14 @@ def retry_exception(
             await _call_handlers(on_attempt, **details)
 
             try:
-                if attempt_timeout is not None:
-                    with trio.fail_after(attempt_timeout):
+                try:
+                    if attempt_timeout is not None:
+                        with trio.fail_after(attempt_timeout):
+                            ret = await target(*args, **kwargs)
+                    else:
                         ret = await target(*args, **kwargs)
-                else:
-                    ret = await target(*args, **kwargs)
-            except trio.TooSlowError:
-                raise AttemptTimeoutError() from None
+                except trio.TooSlowError:
+                    raise AttemptTimeoutError() from None
             except AttemptTimeoutError:
                 max_tries_exceeded = tries == max_tries_value
                 max_time_exceeded = (

@@ -1,3 +1,7 @@
+## 4.2.5 - 2026-07-17
+
+- Fix trio timeout retry completely broken (#50). `attempt_timeout` in `retry_predicate` and `retry_exception` raised `AttemptTimeoutError` inside the same `try` block that was supposed to catch it — the handler was a sibling `except` clause, so it never matched and the exception escaped the retry loop. Fixed by nesting the timeout-try inside a second `try` so the converted `AttemptTimeoutError` is properly caught. Also fixed `ret` being unbound when timeout exhausts `max_tries` in the predicate path. (codevoyager-ai-dev)
+
 ## 4.2.4 - 2026-07-15
 
 - Fix `_maybe_call` swallowing legitimate `TypeError` exceptions from called functions (#48). Previously all `TypeError` exceptions were caught and silenced; now only argument-mismatch errors cause the fallback to return the callable, while real bugs propagate. (fazalpsinfo-cmyk)

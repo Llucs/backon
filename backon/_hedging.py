@@ -250,7 +250,7 @@ def on_hedge(
                 )
 
             return cast(Callable[P, R], wrapper)
-        else:  # noqa: RET505
+        else:
 
             @functools.wraps(target)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:

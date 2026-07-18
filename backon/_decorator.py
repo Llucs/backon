@@ -282,7 +282,7 @@ def on_predicate(
                 wait_gen_kwargs,
             )
             return cast(Callable[P, R], wrapper)
-        else:  # noqa: RET505
+        else:
             _sleep = sleep or time_module.sleep
 
             @functools.wraps(target)
@@ -611,7 +611,7 @@ def on_exception(
                 wait_gen_kwargs,
             )
             return cast(Callable[P, R], wrapper)
-        else:  # noqa: RET505
+        else:
             _sleep = sleep or time_module.sleep
 
             @functools.wraps(target)

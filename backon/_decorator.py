@@ -160,7 +160,7 @@ def on_predicate(
                 attempt_timeout,
                 wait_gen_kwargs,
             )
-            return cast(Callable[P, R], wrapper)
+            return cast("Callable[P, R]", wrapper)
 
         if inspect.isgeneratorfunction(target):
             _sleep = sleep or time_module.sleep
@@ -219,7 +219,7 @@ def on_predicate(
                 attempt_timeout,
                 wait_gen_kwargs,
             )
-            return cast(Callable[P, R], wrapper)
+            return cast("Callable[P, R]", wrapper)
 
         if inspect.iscoroutinefunction(target):
             _sleep = sleep or asyncio.sleep
@@ -227,13 +227,13 @@ def on_predicate(
             @functools.wraps(target)
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 if not is_enabled():
-                    return cast(R, await target(*args, **kwargs))
+                    return cast("R", await target(*args, **kwargs))
 
                 async def wrapped():
                     return await target(*args, **kwargs)
 
                 return cast(
-                    R,
+                    "R",
                     await _retry_async_inner(
                         wrapped,
                         wait_gen,
@@ -281,17 +281,17 @@ def on_predicate(
                 attempt_timeout,
                 wait_gen_kwargs,
             )
-            return cast(Callable[P, R], wrapper)
-        else:  # noqa: RET505
+            return cast("Callable[P, R]", wrapper)
+        else:
             _sleep = sleep or time_module.sleep
 
             @functools.wraps(target)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 if not is_enabled():
-                    return cast(R, target(*args, **kwargs))
+                    return cast("R", target(*args, **kwargs))
 
                 return cast(
-                    R,
+                    "R",
                     _retry_sync_inner(
                         lambda: target(*args, **kwargs),
                         wait_gen,
@@ -339,7 +339,7 @@ def on_predicate(
                 attempt_timeout,
                 wait_gen_kwargs,
             )
-            return cast(Callable[P, R], wrapper)
+            return cast("Callable[P, R]", wrapper)
 
     return decorate
 
@@ -419,7 +419,7 @@ def on_exception(
                     return True
                 return True
 
-            condition = cast(RetryCondition, _condition)
+            condition = cast("RetryCondition", _condition)
 
         if inspect.isasyncgenfunction(target):
             _sleep = sleep or asyncio.sleep
@@ -487,7 +487,7 @@ def on_exception(
                 attempt_timeout,
                 wait_gen_kwargs,
             )
-            return cast(Callable[P, R], wrapper)
+            return cast("Callable[P, R]", wrapper)
 
         if inspect.isgeneratorfunction(target):
             _sleep = sleep or time_module.sleep
@@ -547,7 +547,7 @@ def on_exception(
                 attempt_timeout,
                 wait_gen_kwargs,
             )
-            return cast(Callable[P, R], wrapper)
+            return cast("Callable[P, R]", wrapper)
 
         if inspect.iscoroutinefunction(target):
             _sleep = sleep or asyncio.sleep
@@ -555,13 +555,13 @@ def on_exception(
             @functools.wraps(target)
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 if not is_enabled():
-                    return cast(R, await target(*args, **kwargs))
+                    return cast("R", await target(*args, **kwargs))
 
                 async def wrapped():
                     return await target(*args, **kwargs)
 
                 return cast(
-                    R,
+                    "R",
                     await _retry_async_inner(
                         wrapped,
                         wait_gen,
@@ -610,17 +610,17 @@ def on_exception(
                 attempt_timeout,
                 wait_gen_kwargs,
             )
-            return cast(Callable[P, R], wrapper)
-        else:  # noqa: RET505
+            return cast("Callable[P, R]", wrapper)
+        else:
             _sleep = sleep or time_module.sleep
 
             @functools.wraps(target)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 if not is_enabled():
-                    return cast(R, target(*args, **kwargs))
+                    return cast("R", target(*args, **kwargs))
 
                 return cast(
-                    R,
+                    "R",
                     _retry_sync_inner(
                         lambda: target(*args, **kwargs),
                         wait_gen,
@@ -669,7 +669,7 @@ def on_exception(
                 attempt_timeout,
                 wait_gen_kwargs,
             )
-            return cast(Callable[P, R], wrapper)
+            return cast("Callable[P, R]", wrapper)
 
     return decorate
 

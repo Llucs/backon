@@ -99,5 +99,3 @@ class TestNewExports:
 
     def test_circuit_breaker_in_backon(self):
         assert hasattr(backon, "CircuitBreaker")
-
-

@@ -10,11 +10,12 @@
 ## Before Every Commit
 
 1. Run `ruff check backon/ tests/` — zero warnings allowed.
-2. Run `mypy backon/` — zero errors allowed.
-3. Run `pytest tests/ -q` — all tests must pass.
-4. If you added a feature, you must add tests for it.
-5. If you fixed a bug, add a test that would have caught it.
-6. **Verify README is up to date**: every symbol in `__all__` must be documented, every parameter table must reflect the actual signatures, and every claim must be backed by the code.
+2. Run `ruff format --check backon/ tests/` — zero formatting violations allowed.
+3. Run `mypy backon/` — zero errors allowed.
+4. Run `pytest tests/ -q` — all tests must pass.
+5. If you added a feature, you must add tests for it.
+6. If you fixed a bug, add a test that would have caught it.
+7. **Verify README is up to date**: every symbol in `__all__` must be documented, every parameter table must reflect the actual signatures, and every claim must be backed by the code.
 
 ## Code Style
 

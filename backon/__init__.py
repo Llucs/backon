@@ -88,7 +88,6 @@ __all__ = [
     "Details",
     "HedgeError",
     "HedgingRetrying",
-
     "RateLimitError",
     "RateLimiter",
     "RetryAssertionError",

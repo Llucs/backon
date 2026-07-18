@@ -27,4 +27,4 @@ def get_attempt_number() -> int | None:
     ctx = _retry_context.get()
     if ctx is None:
         return None
-    return cast("int", ctx["attempt_number"])
+    return cast(int, ctx["attempt_number"])

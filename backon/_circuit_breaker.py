@@ -213,7 +213,7 @@ class BreakerRetrying:
             self._breaker.record_failure()
             raise
         self._breaker.record_success()
-        return cast("R", result)
+        return cast(R, result)
 
     async def async_call(
         self, target: Callable[..., R], *args: Any, **kwargs: Any
@@ -226,4 +226,4 @@ class BreakerRetrying:
             self._breaker.record_failure()
             raise
         self._breaker.record_success()
-        return cast("R", result)
+        return cast(R, result)

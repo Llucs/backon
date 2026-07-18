@@ -47,7 +47,7 @@ def hedge(
 ) -> R:
     if inspect.iscoroutinefunction(target):
         return cast(
-            "R",
+            R,
             _hedge_async(
                 target,
                 wait_gen,
@@ -140,7 +140,7 @@ def _hedge_sync(
         for fut in done:
             exc = fut.exception()
             if exc is None:
-                return cast("T", fut.result())
+                return cast(T, fut.result())
             if first_exc is None:
                 first_exc = exc
 
@@ -206,7 +206,7 @@ async def _hedge_async(
     for task in done:
         exc = task.exception()
         if exc is None:
-            return cast("T", task.result())
+            return cast(T, task.result())
         if first_exc is None:
             first_exc = exc
 
@@ -233,7 +233,7 @@ def on_hedge(
             @functools.wraps(target)
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 return cast(
-                    "R",
+                    R,
                     await _hedge_async(
                         _make_hedge_target(target, args, kwargs),
                         wait_gen,
@@ -249,13 +249,13 @@ def on_hedge(
                     ),
                 )
 
-            return cast("Callable[P, R]", wrapper)
-        else:
+            return cast(Callable[P, R], wrapper)
+        else:  # noqa: RET505
 
             @functools.wraps(target)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 return cast(
-                    "R",
+                    R,
                     _hedge_sync(
                         _make_hedge_target(target, args, kwargs),
                         wait_gen,
@@ -271,7 +271,7 @@ def on_hedge(
                     ),
                 )
 
-            return cast("Callable[P, R]", wrapper)
+            return cast(Callable[P, R], wrapper)
 
     return decorate
 

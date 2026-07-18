@@ -109,15 +109,14 @@ def retry_predicate(
 
             await _call_handlers(on_attempt, **details)
 
+            ret = None
             try:
                 if attempt_timeout is not None:
                     with trio.fail_after(attempt_timeout):
                         ret = await target(*args, **kwargs)
                 else:
                     ret = await target(*args, **kwargs)
-            except trio.TooSlowError:
-                raise AttemptTimeoutError() from None
-            except AttemptTimeoutError:
+            except (trio.TooSlowError, AttemptTimeoutError):
                 max_tries_exceeded = tries == max_tries_value
                 max_time_exceeded = (
                     max_time_value is not None and elapsed >= max_time_value
@@ -223,9 +222,7 @@ def retry_exception(
                         ret = await target(*args, **kwargs)
                 else:
                     ret = await target(*args, **kwargs)
-            except trio.TooSlowError:
-                raise AttemptTimeoutError() from None
-            except AttemptTimeoutError:
+            except (trio.TooSlowError, AttemptTimeoutError):
                 max_tries_exceeded = tries == max_tries_value
                 max_time_exceeded = (
                     max_time_value is not None and elapsed >= max_time_value

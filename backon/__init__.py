@@ -30,14 +30,6 @@ from backon._conditions import (
 from backon._context import get_attempt_number, is_retrying
 from backon._decorator import on_exception, on_predicate
 from backon._hedging import HedgeError, HedgingRetrying, hedge, on_hedge
-from backon._instrumentation import (
-    MetricsCollector,
-    OTelMetrics,
-    PrometheusMetrics,
-    StructlogMetrics,
-    get_metrics_collector,
-    set_metrics_collector,
-)
 from backon._jitter import full_jitter, random_jitter
 from backon._rate_limiter import RateLimiter, RateLimitError
 from backon._retry import (
@@ -96,9 +88,7 @@ __all__ = [
     "Details",
     "HedgeError",
     "HedgingRetrying",
-    "MetricsCollector",
-    "OTelMetrics",
-    "PrometheusMetrics",
+
     "RateLimitError",
     "RateLimiter",
     "RetryAssertionError",
@@ -109,7 +99,6 @@ __all__ = [
     "Retrying",
     "RetryingCaller",
     "Stop",
-    "StructlogMetrics",
     "TryAgain",
     "assert_not_retried",
     "assert_retried",
@@ -123,7 +112,6 @@ __all__ = [
     "fibo",
     "full_jitter",
     "get_attempt_number",
-    "get_metrics_collector",
     "hedge",
     "is_retrying",
     "limit_retries",
@@ -147,7 +135,6 @@ __all__ = [
     "retry_never",
     "retry_unless_exception_type",
     "runtime",
-    "set_metrics_collector",
     "sleep_using_event",
     "stop_after_attempt",
     "stop_after_delay",

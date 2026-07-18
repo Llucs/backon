@@ -58,7 +58,6 @@
 - `_circuit_breaker.py` — `CircuitBreaker`, `BreakerRetrying`, `CircuitOpenError` (CLOSED / OPEN / HALF_OPEN).
 - `_hedging.py` — `hedge`, `on_hedge`, `HedgingRetrying`, `HedgeError` (concurrent requests, first success wins).
 - `_rate_limiter.py` — `RateLimiter`, `RateLimitError` (raises `RateLimitError` only for direct `__call__`/`acquire`; inside a retry loop it throttles by sleeping).
-- `_instrumentation.py` — `MetricsCollector`, `PrometheusMetrics`, `OTelMetrics`, `StructlogMetrics`, `set_metrics_collector`, `get_metrics_collector`, `_auto_detect_collector`.
 - `_state.py` — `Attempt`, `RetryState`, `RetryCallState`, `TryAgain`, `RetryError`, `AttemptTimeoutError`.
 - `_testing.py` — testing helpers (`disable_retries`, `enable_retries`, `test_config`, `limit_retries`, `remove_backoff`, `assert_retried`, `assert_not_retried`, `RetryAssertionError`); `assert_retried`/`assert_not_retried` drive the user's `fn` through `on_exception`.
 - `_trio.py` — trio support (`retry_exception`, `retry_predicate`); deliberately private (trio is an optional dep — import via `backon._trio`).

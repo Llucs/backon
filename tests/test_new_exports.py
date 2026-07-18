@@ -3,12 +3,10 @@ from backon import (
     AttemptTimeoutError,
     CircuitBreaker,
     Details,
-    MetricsCollector,
     RateLimiter,
     RateLimitError,
     RetryAssertionError,
     disable_retries,
-    get_metrics_collector,
     retry_if_not_exception_type,
     wait_exponential_jitter,
     wait_none,
@@ -24,7 +22,6 @@ class TestNewExports:
         assert Details is not None
         assert RetryAssertionError is not None
         assert CircuitBreaker is not None
-        assert get_metrics_collector is not None
         assert retry_if_not_exception_type is not None
         assert wait_random is not None
         assert wait_none is not None
@@ -75,10 +72,6 @@ class TestNewExports:
         cb = CircuitBreaker()
         assert cb is not None
 
-    def test_get_metrics_collector(self):
-        mc = get_metrics_collector()
-        assert isinstance(mc, MetricsCollector)
-
     def test_wait_random_in_backon(self):
         assert hasattr(backon, "wait_random")
         assert callable(backon.wait_random)
@@ -107,6 +100,4 @@ class TestNewExports:
     def test_circuit_breaker_in_backon(self):
         assert hasattr(backon, "CircuitBreaker")
 
-    def test_get_metrics_collector_in_backon(self):
-        assert hasattr(backon, "get_metrics_collector")
-        assert callable(backon.get_metrics_collector)
+

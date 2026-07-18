@@ -644,39 +644,6 @@ with HedgingRetrying(backon.expo, max_hedge=3) as h:
 | `timeout` | `None` | Maximum time to wait for any hedge |
 | `on_hedge` | `None` | Callback when a hedge request is sent |
 
-### Metrics
-
-Optional Prometheus, OpenTelemetry, and structlog metrics. Each requires its corresponding package to be installed.
-
-```python
-from backon import PrometheusMetrics, OTelMetrics, StructlogMetrics, set_metrics_collector
-
-# Prometheus
-set_metrics_collector(PrometheusMetrics())
-
-# OpenTelemetry
-set_metrics_collector(OTelMetrics(meter_name="myapp.backon"))
-
-# Structlog (structured logging)
-set_metrics_collector(StructlogMetrics())
-```
-
-Auto-detection runs at import time (first available: prometheus_client > structlog > no-op); the active collector is queryable via `backon.get_metrics_collector()`:
-
-```python
-import backon
-
-print(backon.get_metrics_collector())
-```
-
-Metrics collected:
-- `backon_retry_attempts_total` (attempts, labeled by target and exception type)
-- `backon_retry_success_total` (successes)
-- `backon_retry_failure_total` (failures)
-- `backon_circuit_breaker_open_total` / `backon_circuit_breaker_close_total`
-- `backon_hedge_requests_total`
-- `backon.retry.attempt_duration` (histogram, OTel only)
-
 ### Testing Utilities
 
 ```python

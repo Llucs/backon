@@ -1,3 +1,14 @@
+## 4.3.0 - 2026-07-18
+
+- **Breaking**: Remove dead metrics instrumentation (`MetricsCollector`, `PrometheusMetrics`, `OTelMetrics`, `StructlogMetrics`, `get_metrics_collector`, `set_metrics_collector`). Never called by retry loops — entirely dead code.
+- **Breaking**: Remove dead ReadTheDocs config and `docs/` directory. RTD was unused and referencing a non-existent `docs/conf.py`.
+- Fix trio `AttemptTimeoutError` never caught — unified `except trio.TooSlowError` / `except AttemptTimeoutError` into single handler.
+- Fix mutable wait generator singletons (`expo`, `constant`, `fibo`, `decay`, etc.) sharing internal state across uses. Wrapped in `_WaitFactory`.
+- Refactor `_decorator.py` from 843 to 563 lines (‑33%). Extracted `_prepare_handlers()`, `_build_retry_kw()`, `_make_retry_with()`.
+- Enable C4 (comprehensions) and RUF (ruff-specific) lint rules.
+- Rewrite `CONTRIBUTING.md` to reference `AGENTS.md` as single source of truth for technical rules.
+- Add `ruff format --check` to the pre-commit checklist in `AGENTS.md`.
+
 ## 4.2.5 - 2026-07-17
 
 - Fix `_RetryAttempt.__exit__` swallowing `KeyboardInterrupt`, `SystemExit`, and `GeneratorExit` (#39). `__exit__` now only suppresses `Exception` subclasses, letting `BaseException` subclasses propagate naturally. (codevoyager-ai-dev)

@@ -51,6 +51,26 @@ class _CombinedWait(_Wait):
         return _CombinedWait(*self._waits, other)
 
 
+class _WaitFactory:
+    __slots__ = ("_cls",)
+
+    def __init__(self, cls: type[_Wait]) -> None:
+        self._cls = cls
+
+    def __call__(self, *args: Any, **kwargs: Any) -> _Wait:
+        return self._cls(*args, **kwargs)
+
+    def __add__(self, other: _Wait) -> _CombinedWait:
+        if isinstance(other, _CombinedWait):
+            return _CombinedWait(self(), *other._waits)
+        return _CombinedWait(self(), other)
+
+    def __radd__(self, other: _Wait) -> _CombinedWait:
+        if isinstance(other, _CombinedWait):
+            return _CombinedWait(*other._waits, self())
+        return _CombinedWait(other, self())
+
+
 class _Expo(_Wait):
     def __init__(
         self,
@@ -72,7 +92,7 @@ class _Expo(_Wait):
         return self._max_value
 
 
-expo = _Expo()
+expo = _WaitFactory(_Expo)
 
 
 class _Decay(_Wait):
@@ -100,7 +120,7 @@ class _Decay(_Wait):
         return self._min_value
 
 
-decay = _Decay()
+decay = _WaitFactory(_Decay)
 
 
 class _Fibo(_Wait):
@@ -118,7 +138,7 @@ class _Fibo(_Wait):
         return float(self._max_value)
 
 
-fibo = _Fibo()
+fibo = _WaitFactory(_Fibo)
 
 
 class _Constant(_Wait):
@@ -134,7 +154,7 @@ class _Constant(_Wait):
         return next(self._itr)
 
 
-constant = _Constant()
+constant = _WaitFactory(_Constant)
 
 
 class _Runtime(_Wait):
@@ -146,7 +166,7 @@ class _Runtime(_Wait):
         return self._value(send_value)
 
 
-runtime = _Runtime(value=lambda x: x)
+runtime = _WaitFactory(_Runtime)
 
 
 class _WaitRandomExponential(_Wait):
@@ -179,7 +199,7 @@ class _WaitRandomExponential(_Wait):
         return random.uniform(0, a)
 
 
-wait_random_exponential = _WaitRandomExponential()
+wait_random_exponential = _WaitFactory(_WaitRandomExponential)
 
 
 class _WaitIncrementing(_Wait):
@@ -203,7 +223,7 @@ class _WaitIncrementing(_Wait):
         return a
 
 
-wait_incrementing = _WaitIncrementing()
+wait_incrementing = _WaitFactory(_WaitIncrementing)
 
 
 class _WaitChain(_Wait):
@@ -240,7 +260,7 @@ class _WaitException(_Wait):
         return self._value(send_value)
 
 
-wait_exception = _WaitException(value=lambda x: x)
+wait_exception = _WaitFactory(_WaitException)
 
 
 class _WaitRandom(_Wait):
@@ -253,7 +273,7 @@ class _WaitRandom(_Wait):
         return random.uniform(self._min, self._max)
 
 
-wait_random = _WaitRandom()
+wait_random = _WaitFactory(_WaitRandom)
 
 
 class _WaitExponentialJitter(_Wait):
@@ -278,7 +298,7 @@ class _WaitExponentialJitter(_Wait):
         return delay
 
 
-wait_exponential_jitter = _WaitExponentialJitter()
+wait_exponential_jitter = _WaitFactory(_WaitExponentialJitter)
 
 
 class _WaitNone(_Wait):
@@ -286,4 +306,4 @@ class _WaitNone(_Wait):
         return 0.0
 
 
-wait_none = _WaitNone()
+wait_none = _WaitFactory(_WaitNone)

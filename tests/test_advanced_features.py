@@ -21,6 +21,8 @@ from backon._retry import Retrying, _RetryAttempt, _to_seconds
 from backon._state import Attempt, AttemptResult, RetryState
 from backon._wait_gen import (
     _CombinedWait,
+    _Expo,
+    _WaitFactory,
     constant,
     expo,
     fibo,
@@ -519,8 +521,8 @@ class TestWaitAddition:
         combined = expo + constant
         assert isinstance(combined, _CombinedWait)
         assert len(combined._waits) == 2
-        assert combined._waits[0] is expo
-        assert combined._waits[1] is constant
+        assert isinstance(combined._waits[0], _Expo)
+        assert isinstance(combined._waits[1], _WaitFactory)
 
     def test_combined_wait_sums_values(self):
         combined = constant + constant
@@ -539,9 +541,9 @@ class TestWaitAddition:
         combined = expo + constant + fibo
         assert isinstance(combined, _CombinedWait)
         assert len(combined._waits) == 3
-        assert combined._waits[0] is expo
-        assert combined._waits[1] is constant
-        assert combined._waits[2] is fibo
+        assert isinstance(combined._waits[0], _Expo)
+        assert isinstance(combined._waits[1], _WaitFactory)
+        assert isinstance(combined._waits[2], _WaitFactory)
 
     def test_wait_addition_chaining_values(self):
         combined = expo + constant + fibo

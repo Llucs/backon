@@ -68,8 +68,14 @@ def _prepare_handlers(
     before = _config_handlers(before)
     after = _config_handlers(after)
     return (
-        logger, on_success, on_backoff, on_giveup,
-        on_attempt, before_sleep, before, after,
+        logger,
+        on_success,
+        on_backoff,
+        on_giveup,
+        on_attempt,
+        before_sleep,
+        before,
+        after,
     )
 
 
@@ -140,11 +146,24 @@ def _make_retry_with(
 ) -> Callable[..., Callable[P, R]]:
     is_predicate = predicate is not None
     known = {
-        "max_tries", "max_time", "jitter",
-        "on_success", "on_backoff", "on_giveup", "on_attempt",
-        "before_sleep", "logger", "backoff_log_level", "giveup_log_level",
-        "retry_error_callback", "raise_on_giveup", "sleep",
-        "before", "after", "rate_limit", "attempt_timeout",
+        "max_tries",
+        "max_time",
+        "jitter",
+        "on_success",
+        "on_backoff",
+        "on_giveup",
+        "on_attempt",
+        "before_sleep",
+        "logger",
+        "backoff_log_level",
+        "giveup_log_level",
+        "retry_error_callback",
+        "raise_on_giveup",
+        "sleep",
+        "before",
+        "after",
+        "rate_limit",
+        "attempt_timeout",
         "wait_gen",
     }
     if is_predicate:
@@ -224,32 +243,71 @@ def on_predicate(
         nonlocal before, after
 
         (
-            _r_logger, _r_on_success, _r_on_backoff, _r_on_giveup,
-            _r_on_attempt, _r_before_sleep, _r_before, _r_after,
+            _r_logger,
+            _r_on_success,
+            _r_on_backoff,
+            _r_on_giveup,
+            _r_on_attempt,
+            _r_before_sleep,
+            _r_before,
+            _r_after,
         ) = (
-            logger, on_success, on_backoff, on_giveup,
-            on_attempt, before_sleep, before, after,
+            logger,
+            on_success,
+            on_backoff,
+            on_giveup,
+            on_attempt,
+            before_sleep,
+            before,
+            after,
         )
 
         (
-            logger, on_success, on_backoff, on_giveup, on_attempt,
-            before_sleep, before, after,
+            logger,
+            on_success,
+            on_backoff,
+            on_giveup,
+            on_attempt,
+            before_sleep,
+            before,
+            after,
         ) = _prepare_handlers(
-            logger, on_success, on_backoff, on_giveup, on_attempt,
-            before_sleep, before, after, backoff_log_level, giveup_log_level,
+            logger,
+            on_success,
+            on_backoff,
+            on_giveup,
+            on_attempt,
+            before_sleep,
+            before,
+            after,
+            backoff_log_level,
+            giveup_log_level,
         )
 
         condition: RetryCondition = retry_if_result(predicate)
 
         _kw = _build_retry_kw(
-            condition, max_tries, max_time, jitter,
-            on_success, on_backoff, on_giveup, on_attempt,
-            before_sleep, retry_error_callback, raise_on_giveup,
-            wait_gen_kwargs, before, after, rate_limit, attempt_timeout,
+            condition,
+            max_tries,
+            max_time,
+            jitter,
+            on_success,
+            on_backoff,
+            on_giveup,
+            on_attempt,
+            before_sleep,
+            retry_error_callback,
+            raise_on_giveup,
+            wait_gen_kwargs,
+            before,
+            after,
+            rate_limit,
+            attempt_timeout,
         )
 
         _retry_with = _make_retry_with(
-            target, wait_gen,
+            target,
+            wait_gen,
             predicate=predicate,
             max_tries=max_tries,
             max_time=max_time,
@@ -399,19 +457,45 @@ def on_exception(
         nonlocal before, after
 
         (
-            _r_logger, _r_on_success, _r_on_backoff, _r_on_giveup,
-            _r_on_attempt, _r_before_sleep, _r_before, _r_after,
+            _r_logger,
+            _r_on_success,
+            _r_on_backoff,
+            _r_on_giveup,
+            _r_on_attempt,
+            _r_before_sleep,
+            _r_before,
+            _r_after,
         ) = (
-            logger, on_success, on_backoff, on_giveup,
-            on_attempt, before_sleep, before, after,
+            logger,
+            on_success,
+            on_backoff,
+            on_giveup,
+            on_attempt,
+            before_sleep,
+            before,
+            after,
         )
 
         (
-            logger, on_success, on_backoff, on_giveup, on_attempt,
-            before_sleep, before, after,
+            logger,
+            on_success,
+            on_backoff,
+            on_giveup,
+            on_attempt,
+            before_sleep,
+            before,
+            after,
         ) = _prepare_handlers(
-            logger, on_success, on_backoff, on_giveup, on_attempt,
-            before_sleep, before, after, backoff_log_level, giveup_log_level,
+            logger,
+            on_success,
+            on_backoff,
+            on_giveup,
+            on_attempt,
+            before_sleep,
+            before,
+            after,
+            backoff_log_level,
+            giveup_log_level,
         )
 
         exc_types: tuple[type[Exception], ...]
@@ -435,14 +519,27 @@ def on_exception(
             condition = cast(RetryCondition, _condition)
 
         _kw = _build_retry_kw(
-            condition, max_tries, max_time, jitter,
-            on_success, on_backoff, on_giveup, on_attempt,
-            before_sleep, retry_error_callback, raise_on_giveup,
-            wait_gen_kwargs, before, after, rate_limit, attempt_timeout,
+            condition,
+            max_tries,
+            max_time,
+            jitter,
+            on_success,
+            on_backoff,
+            on_giveup,
+            on_attempt,
+            before_sleep,
+            retry_error_callback,
+            raise_on_giveup,
+            wait_gen_kwargs,
+            before,
+            after,
+            rate_limit,
+            attempt_timeout,
         )
 
         _retry_with = _make_retry_with(
-            target, wait_gen,
+            target,
+            wait_gen,
             exception=exception,
             giveup=giveup,
             max_tries=max_tries,

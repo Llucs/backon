@@ -205,8 +205,14 @@ class BreakerRetrying:
         return self._breaker
 
     def call(self, target: Callable[..., R], *args: Any, **kwargs: Any) -> R:
-        if self._breaker.state == CircuitBreakerState.OPEN:
+        current_state = self._breaker.state
+        if current_state == CircuitBreakerState.OPEN:
             raise CircuitOpenError(self._breaker.name)
+        if current_state == CircuitBreakerState.HALF_OPEN:
+            with self._breaker._lock:
+                if self._breaker._half_open_calls >= self._breaker._half_open_max_calls:
+                    raise CircuitOpenError(self._breaker.name)
+                self._breaker._half_open_calls += 1
         try:
             result = self._retrying.call(target, *args, **kwargs)
         except BaseException:
@@ -218,8 +224,14 @@ class BreakerRetrying:
     async def async_call(
         self, target: Callable[..., R], *args: Any, **kwargs: Any
     ) -> R:
-        if self._breaker.state == CircuitBreakerState.OPEN:
+        current_state = self._breaker.state
+        if current_state == CircuitBreakerState.OPEN:
             raise CircuitOpenError(self._breaker.name)
+        if current_state == CircuitBreakerState.HALF_OPEN:
+            with self._breaker._lock:
+                if self._breaker._half_open_calls >= self._breaker._half_open_max_calls:
+                    raise CircuitOpenError(self._breaker.name)
+                self._breaker._half_open_calls += 1
         try:
             result = await self._retrying.async_call(target, *args, **kwargs)
         except BaseException:

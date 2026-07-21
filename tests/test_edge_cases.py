@@ -757,3 +757,140 @@ class TestOnExceptionGiveupCondition:
         with pytest.raises(KeyError):
             f()
         assert len(calls) == 1
+
+
+class TestBaseExceptionPropagation:
+    def test_keyboard_interrupt_propagates_raise_on_giveup_false(self):
+        @backon.on_exception(
+            backon.constant,
+            ValueError,
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            raise_on_giveup=False,
+            sleep=lambda s: None,
+            logger=None,
+        )
+        def fn():
+            raise KeyboardInterrupt("abort")
+
+        with pytest.raises(KeyboardInterrupt):
+            fn()
+
+    def test_system_exit_propagates_raise_on_giveup_false(self):
+        @backon.on_exception(
+            backon.constant,
+            ValueError,
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            raise_on_giveup=False,
+            sleep=lambda s: None,
+            logger=None,
+        )
+        def fn():
+            raise SystemExit(1)
+
+        with pytest.raises(SystemExit):
+            fn()
+
+    def test_generator_exit_propagates_raise_on_giveup_false(self):
+        @backon.on_exception(
+            backon.constant,
+            ValueError,
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            raise_on_giveup=False,
+            sleep=lambda s: None,
+            logger=None,
+        )
+        def fn():
+            raise GeneratorExit()
+
+        with pytest.raises(GeneratorExit):
+            fn()
+
+    def test_keyboard_interrupt_propagates_through_retry_func(self):
+        def fn():
+            raise KeyboardInterrupt("abort")
+
+        with pytest.raises(KeyboardInterrupt):
+            backon.retry(
+                fn,
+                backon.constant,
+                exception=ValueError,
+                max_tries=3,
+                jitter=None,
+                interval=0.01,
+                raise_on_giveup=False,
+                sleep=lambda s: None,
+                logger=None,
+            )
+
+    def test_keyboard_interrupt_propagates_through_retrying(self):
+        r = backon.Retrying(
+            backon.constant,
+            exception=ValueError,
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            raise_on_giveup=False,
+            sleep=lambda s: None,
+            logger=None,
+        )
+        with pytest.raises(KeyboardInterrupt):
+            r.call(lambda: (_ for _ in ()).throw(KeyboardInterrupt("abort")))
+
+    @pytest.mark.asyncio
+    async def test_async_keyboard_interrupt_propagates(self):
+        @backon.on_exception(
+            backon.constant,
+            ValueError,
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            raise_on_giveup=False,
+            sleep=lambda s: None,
+            logger=None,
+        )
+        async def fn():
+            raise KeyboardInterrupt("abort")
+
+        with pytest.raises(KeyboardInterrupt):
+            await fn()
+
+    @pytest.mark.asyncio
+    async def test_async_system_exit_propagates(self):
+        @backon.on_exception(
+            backon.constant,
+            ValueError,
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            raise_on_giveup=False,
+            sleep=lambda s: None,
+            logger=None,
+        )
+        async def fn():
+            raise SystemExit(1)
+
+        with pytest.raises(SystemExit):
+            await fn()
+
+    def test_raise_on_giveup_true_still_propagates_keyboard_interrupt(self):
+        @backon.on_exception(
+            backon.constant,
+            ValueError,
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            raise_on_giveup=True,
+            sleep=lambda s: None,
+            logger=None,
+        )
+        def fn():
+            raise KeyboardInterrupt("abort")
+
+        with pytest.raises(KeyboardInterrupt):
+            fn()

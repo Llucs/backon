@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import threading
 import time
@@ -569,3 +570,132 @@ class TestBreakerRetrying:
 
         assert len(calls) == 2
         assert cb.failure_count == 1
+
+
+class TestBreakerRetryingHalfOpen:
+    def test_half_open_allows_one_and_blocks_second(self):
+        cb = CircuitBreaker(
+            failure_threshold=1,
+            recovery_timeout=0,
+            half_open_max_calls=1,
+        )
+        cb.record_failure()
+        assert cb.state == CircuitBreakerState.HALF_OPEN
+
+        br = BreakerRetrying(
+            constant,
+            breaker=cb,
+            max_tries=1,
+            jitter=None,
+            interval=0.01,
+        )
+
+        def slow_fn():
+            time.sleep(0.05)
+            return 42
+
+        results = []
+        errors = []
+
+        def caller():
+            try:
+                results.append(br.call(slow_fn))
+            except CircuitOpenError as e:
+                errors.append(e)
+
+        t1 = threading.Thread(target=caller)
+        t2 = threading.Thread(target=caller)
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+
+        assert len(results) == 1
+        assert len(errors) == 1
+
+    def test_half_open_allows_one_call_on_bare_circuit_breaker(self):
+        cb = CircuitBreaker(
+            failure_threshold=1,
+            recovery_timeout=0,
+            half_open_max_calls=1,
+        )
+        cb.record_failure()
+        assert cb.state == CircuitBreakerState.HALF_OPEN
+
+        result = cb.call(lambda: 42)
+        assert result == 42
+        assert cb.state == CircuitBreakerState.CLOSED
+
+    def test_half_open_blocks_with_threads(self):
+        cb = CircuitBreaker(
+            failure_threshold=1,
+            recovery_timeout=0,
+            half_open_max_calls=1,
+        )
+        cb.record_failure()
+        assert cb.state == CircuitBreakerState.HALF_OPEN
+
+        br = BreakerRetrying(
+            constant,
+            breaker=cb,
+            max_tries=1,
+            jitter=None,
+            interval=0.01,
+        )
+
+        def slow_fn():
+            time.sleep(0.05)
+            return 42
+
+        results = []
+        errors = []
+
+        def caller():
+            try:
+                results.append(br.call(slow_fn))
+            except CircuitOpenError as e:
+                errors.append(e)
+
+        t1 = threading.Thread(target=caller)
+        t2 = threading.Thread(target=caller)
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+
+        assert len(results) >= 1
+        assert len(errors) >= 1
+
+    @pytest.mark.asyncio
+    async def test_async_half_open_blocks_second_call(self):
+        cb = CircuitBreaker(
+            failure_threshold=1,
+            recovery_timeout=0,
+            half_open_max_calls=1,
+        )
+        cb.record_failure()
+        assert cb.state == CircuitBreakerState.HALF_OPEN
+
+        br = BreakerRetrying(
+            constant,
+            breaker=cb,
+            max_tries=1,
+            jitter=None,
+            interval=0.01,
+        )
+
+        async def slow_fn():
+            await asyncio.sleep(0.05)
+            return 42
+
+        async def call_breaker():
+            try:
+                return await br.async_call(slow_fn)
+            except CircuitOpenError:
+                return None
+
+        results = await asyncio.gather(call_breaker(), call_breaker())
+        successes = [r for r in results if r == 42]
+        blocked = [r for r in results if r is None]
+        assert len(successes) == 1
+        assert len(blocked) == 1

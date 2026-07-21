@@ -111,7 +111,7 @@ def _retry_fast_sync(
                 _check_hot_loop()
                 sleep(seconds)
             continue
-        except BaseException as e:
+        except Exception as e:
             exc = e
             state.outcome.exception = e
             state.outcome.value = None
@@ -192,7 +192,7 @@ async def _retry_fast_async(
                 _check_hot_loop()
                 await sleep(seconds)
             continue
-        except BaseException as e:
+        except Exception as e:
             exc = e
             state.outcome.exception = e
             state.outcome.value = None

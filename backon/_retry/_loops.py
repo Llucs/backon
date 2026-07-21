@@ -100,7 +100,7 @@ def _retry_loop_sync(
                     _check_hot_loop()
                     sleep(seconds)
                 continue
-            except BaseException as exc:
+            except Exception as exc:
                 _exc = exc
                 outcome.exception = exc
                 outcome.value = None
@@ -245,7 +245,7 @@ async def _retry_loop_async(
                     _check_hot_loop()
                     await sleep(seconds)
                 continue
-            except BaseException as exc:
+            except Exception as exc:
                 _exc = exc
                 outcome.exception = exc
                 outcome.value = None

@@ -1,3 +1,10 @@
+## 4.4.1 - 2026-07-21
+
+- Fix `raise_on_giveup=False` silently swallowing `KeyboardInterrupt`, `SystemExit`, and `GeneratorExit` (#31). All retry loops (fast and slow, sync and async) now use `except Exception` instead of `except BaseException`, letting control-flow exceptions propagate naturally.
+- Fix `BreakerRetrying.call()` and `BreakerRetrying.async_call()` ignoring `half_open_max_calls` when the circuit breaker is in `HALF_OPEN` state (#26). Added the same HALF_OPEN guard that `CircuitBreaker.call()` uses, preventing unlimited concurrent calls during recovery.
+- Add tests for KeyboardInterrupt/SystemExit/GeneratorExit propagation through retry loops.
+- Add tests for BreakerRetrying HALF_OPEN state enforcement.
+
 ## 4.4.0 - 2026-07-21
 
 - **Python 3.9 support restored**. Minimum Python is now 3.9 (was 3.10).

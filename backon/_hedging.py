@@ -340,7 +340,7 @@ class HedgingRetrying:
             return await target(*args, **kwargs)
 
         return await _hedge_async(
-            wrapped,
+            wrapped,  # type: ignore[arg-type]
             self._wait_gen,
             max_hedge=self._max_hedge,
             exception=self._exception,

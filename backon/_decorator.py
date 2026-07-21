@@ -241,6 +241,9 @@ def on_predicate(
     **wait_gen_kwargs: Any,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorate(target: Callable[P, R]) -> Callable[P, R]:
+        if isinstance(target, staticmethod):
+            target = cast(Callable[P, R], target.__func__)
+
         nonlocal logger, on_success, on_backoff, on_giveup, on_attempt, before_sleep
         nonlocal before, after
 
@@ -455,6 +458,9 @@ def on_exception(
     **wait_gen_kwargs: Any,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorate(target: Callable[P, R]) -> Callable[P, R]:
+        if isinstance(target, staticmethod):
+            target = cast(Callable[P, R], target.__func__)
+
         nonlocal logger, on_success, on_backoff, on_giveup, on_attempt, before_sleep
         nonlocal before, after
 

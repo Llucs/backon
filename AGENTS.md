@@ -19,7 +19,7 @@
 
 ## Code Style
 
-- Target Python 3.10+. Use modern syntax: `|` for unions, `TypeVar` bounds, etc.
+- Target Python 3.9+. Use `Union`/`Optional` in module-level type aliases; `X | Y` is allowed in annotations (protected by `from __future__ import annotations`).
 - Type hints on every function signature — no `Any` unless unavoidable.
 - Zero comments in code. Code must be self-documenting.
 - No docstrings unless the API is public and non-obvious.

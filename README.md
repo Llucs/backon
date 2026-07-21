@@ -116,7 +116,7 @@ backon is a modern evolution of [backoff](https://github.com/litl/backoff) — a
 pip install backon
 ```
 
-Requires Python 3.10+.
+Requires Python 3.9+.
 
 ---
 
@@ -777,7 +777,7 @@ Key differences:
 
 | Area | backoff | backon |
 |---|---|---|
-| Python support | 3.7+ | 3.10+ |
+| Python support | 3.7+ | 3.9+ |
 | Type hints | Partial | Full |
 | `on_attempt` callback | Not supported | Supported |
 | Context manager | Not supported | `Retrying` class |

@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 import logging
+import sys
 from collections.abc import Callable, Coroutine, Sequence
-from typing import Any, ParamSpec, TypedDict, TypeVar, Union
+from typing import Any, TypedDict, TypeVar, Union
 
 from backon._wait_gen import _Wait
+
+if sys.version_info >= (3, 10):
+    from typing import ParamSpec
+else:
+
+    class ParamSpec:  # type: ignore[no-redef]
+        def __init__(self, name: str) -> None: ...
 
 
 class _Details(TypedDict):
@@ -28,13 +36,14 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 _CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
-_Handler = (
-    Callable[["Details"], None] | Callable[["Details"], Coroutine[Any, Any, None]]
-)
+_Handler = Union[
+    Callable[["Details"], None],
+    Callable[["Details"], Coroutine[Any, Any, None]],
+]
 _Jitterer = Callable[[float], float]
-_MaybeCallable = Union[T, Callable[[], T]]  # noqa: UP007
-_MaybeLogger = str | logging.Logger | None
-_MaybeSequence = Union[T, Sequence[T]]  # noqa: UP007
+_MaybeCallable = Union[T, Callable[[], T]]
+_MaybeLogger = Union[str, logging.Logger, None]
+_MaybeSequence = Union[T, Sequence[T]]
 _Predicate = Callable[[T], bool]
 _WaitGenerator = Callable[..., _Wait]
 

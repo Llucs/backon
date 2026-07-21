@@ -1,3 +1,12 @@
+## 4.4.0 - 2026-07-21
+
+- **Python 3.9 support restored**. Minimum Python is now 3.9 (was 3.10).
+- Replace `X | Y` in module-level type aliases with `Union[X, Y]` / `Optional[X]`.
+- Add `from __future__ import annotations` to `_decorator.py` so `X | Y` in function signatures is not evaluated at runtime.
+- Add conditional `ParamSpec` import with a runtime stub for Python 3.9.
+- Update CI matrix to include Python 3.9.
+- Update ruff `target-version = "py39"`.
+
 ## 4.3.0 - 2026-07-18
 
 - **Breaking**: Remove dead metrics instrumentation (`MetricsCollector`, `PrometheusMetrics`, `OTelMetrics`, `StructlogMetrics`, `get_metrics_collector`, `set_metrics_collector`). Never called by retry loops — entirely dead code.

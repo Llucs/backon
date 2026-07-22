@@ -1,3 +1,10 @@
+## 4.4.2 - 2026-07-22
+
+- Documentation: remove stale Metrics references from README. The metrics instrumentation (`MetricsCollector`, `PrometheusMetrics`, `OTelMetrics`, `StructlogMetrics`, `get_metrics_collector`, `set_metrics_collector`) was removed as dead code in 4.3.0, but the README still listed a `[Metrics](#metrics)` ToC entry (broken link), advertised "Prometheus / OpenTelemetry / structlog metrics" in the Features list, and included a "Metrics | Prometheus / OTel" row in the migration table. All three references are now gone.
+- Documentation: fix `AGENTS.md` Release Process step 1, which instructed to bump `__version__` in `backon/__init__.py`. That value is read dynamically from `importlib.metadata`; only `version` in `pyproject.toml` needs bumping. Now consistent with the Versioning section.
+
+Note: mypy `python_version` stays at `3.10` even though 4.4.0 restored Python 3.9 runtime support. mypy 2.x dropped `python_version = "3.9"` (minimum supported target is 3.10); 3.9 compatibility is enforced via `Union`/`Optional` in module-level aliases, `from __future__ import annotations` in `_decorator.py`, and the Python 3.9 entry in the CI matrix.
+
 ## 4.4.1 - 2026-07-21
 
 - Fix `raise_on_giveup=False` silently swallowing `KeyboardInterrupt`, `SystemExit`, and `GeneratorExit` (#31). All retry loops (fast and slow, sync and async) now use `except Exception` instead of `except BaseException`, letting control-flow exceptions propagate naturally.

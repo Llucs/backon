@@ -87,7 +87,7 @@
 
 ## Release Process
 
-1. Bump `__version__` in `backon/__init__.py` and `version` in `pyproject.toml`.
+1. Bump `version` in `pyproject.toml` (the single source of truth; `__version__` in `backon/__init__.py` is read dynamically from `importlib.metadata`).
 2. Update `CHANGELOG.md` with the new version, date, and changes.
 3. Commit with message `Release vX.Y.Z`.
 4. Push to `main`.

@@ -70,7 +70,6 @@ backon is a modern evolution of [backoff](https://github.com/litl/backoff) — a
 - [Advanced Features](#advanced-features)
   - [Circuit Breaker](#circuit-breaker)
   - [Hedging](#hedging)
-  - [Metrics](#metrics)
   - [Testing Utilities](#testing-utilities)
   - [Trio Support](#trio-support)
   - [Retry Context Inspection](#retry-context-inspection)
@@ -101,7 +100,6 @@ backon is a modern evolution of [backoff](https://github.com/litl/backoff) — a
 - **Rich callbacks** — `on_attempt`, `on_backoff`, `on_success`, `on_giveup`, `before_sleep`, `before`, `after`
 - **Circuit breaker** — CLOSED/OPEN/HALF_OPEN states with automatic recovery
 - **Hedging** — concurrent retry requests, first-success-wins
-- **Prometheus / OpenTelemetry / structlog metrics** — optional, zero hard dependencies
 - **Testing module** — `disable_retries()`, `limit_retries()`, `remove_backoff()`, `assert_retried()`
 - **Trio support** — retry with the trio async framework
 - **Operator overloading** — compose stops with `|` / `&`, wait generators with `+`
@@ -786,7 +784,6 @@ Key differences:
 | Custom sleep | Not supported | `sleep=` parameter |
 | Circuit breaker | Not supported | `CircuitBreaker` + `BreakerRetrying` |
 | Hedging | Not supported | `hedge()` / `on_hedge()` |
-| Metrics | Not supported | Prometheus / OTel |
 | Wait generator composition | Not supported | `+` operator |
 | Stop / RetryCondition composition | Not supported | `\|` / `&` operators |
 | Trio | Not supported | `backon._trio` (deliberately private, optional dep) |

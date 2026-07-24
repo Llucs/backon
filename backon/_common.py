@@ -106,11 +106,10 @@ def _config_handlers(
         handlers.append(
             functools.partial(default_handler, logger=logger, log_level=log_level)
         )
-        if user_handlers is not None:
-            if hasattr(user_handlers, "__iter__"):
-                handlers += list(user_handlers)
-            else:
-                handlers.append(user_handlers)
+        if hasattr(user_handlers, "__iter__"):
+            handlers += list(user_handlers)
+        else:
+            handlers.append(user_handlers)
     elif user_handlers is not None:
         if hasattr(user_handlers, "__iter__"):
             handlers += list(user_handlers)

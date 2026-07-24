@@ -419,6 +419,29 @@ class TestRetryApiDisabledAsync:
             backon.enable()
 
 
+class TestRetryApiAsyncExplicitConditionStop:
+    @pytest.mark.asyncio
+    async def test_retry_async_with_explicit_condition_stop(self):
+        from backon._retry._api import _retry_async
+
+        calls = []
+
+        async def target():
+            calls.append(1)
+            raise ValueError("fail")
+
+        with pytest.raises(ValueError):
+            await _retry_async(
+                target,
+                backon.constant,
+                condition=backon.retry_if_exception_type(ValueError),
+                stop=backon.stop_after_attempt(2),
+                jitter=None,
+                logger=None,
+            )
+        assert len(calls) == 2
+
+
 class TestRetryLoopsRateLimit:
     def test_rate_limit_sync(self):
         calls = []
@@ -547,6 +570,142 @@ class TestTryAgainStopIteration:
             wait_gen_kwargs={"interval": 0.01},
         )
         assert result is None
+
+
+class TestLoopTryAgainEdgeCases:
+    def test_sync_loop_try_again_stop_iteration(self):
+        from backon._wait_gen import _Wait
+
+        class _FiniteWait(_Wait):
+            def __init__(self, **kw):
+                self._calls = 0
+
+            def next(self, send=None):
+                self._calls += 1
+                if self._calls >= 2:
+                    raise StopIteration
+                return 0.01
+
+        calls = []
+
+        def target():
+            calls.append(1)
+            raise backon.TryAgain
+
+        result = backon.retry(
+            target,
+            _FiniteWait,
+            condition=backon.retry_always(),
+            max_tries=None,
+            jitter=None,
+            sleep=lambda s: None,
+            logger=None,
+            on_backoff=lambda d: None,
+            raise_on_giveup=False,
+        )
+        assert result is None
+        assert len(calls) == 2
+
+    @pytest.mark.asyncio
+    async def test_async_loop_try_again_stop_iteration(self):
+        from backon._wait_gen import _Wait
+
+        class _FiniteWait(_Wait):
+            def __init__(self, **kw):
+                self._calls = 0
+
+            def next(self, send=None):
+                self._calls += 1
+                if self._calls >= 2:
+                    raise StopIteration
+                return 0.01
+
+        calls = []
+
+        async def target():
+            calls.append(1)
+            raise backon.TryAgain
+
+        result = await backon.retry(
+            target,
+            _FiniteWait,
+            condition=backon.retry_always(),
+            max_tries=None,
+            jitter=None,
+            logger=None,
+            on_backoff=lambda d: None,
+            raise_on_giveup=False,
+        )
+        assert result is None
+        assert len(calls) == 2
+
+    @pytest.mark.asyncio
+    async def test_async_loop_try_again_stop_true(self):
+        calls = []
+
+        async def target():
+            calls.append(1)
+            if len(calls) < 3:
+                raise backon.TryAgain
+            return "ok"
+
+        result = await backon.retry(
+            target,
+            backon.constant,
+            condition=backon.retry_always(),
+            max_tries=2,
+            jitter=None,
+            interval=0.01,
+            logger=None,
+            on_backoff=lambda d: None,
+        )
+        assert result is None
+        assert len(calls) == 2
+
+    def test_sync_loop_try_again_positive_wait(self):
+        calls = []
+
+        def target():
+            calls.append(1)
+            if len(calls) < 2:
+                raise backon.TryAgain
+            return "ok"
+
+        result = backon.retry(
+            target,
+            backon.constant,
+            condition=backon.retry_always(),
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            sleep=lambda s: None,
+            logger=None,
+            on_backoff=lambda d: None,
+        )
+        assert result == "ok"
+
+    def test_sync_loop_try_again_zero_wait(self):
+        from backon._wait_gen import wait_none
+
+        calls = []
+
+        def target():
+            calls.append(1)
+            if len(calls) < 2:
+                raise backon.TryAgain
+            return "ok"
+
+        result = backon.retry(
+            target,
+            wait_none,
+            condition=backon.retry_always(),
+            max_tries=3,
+            jitter=None,
+            sleep=lambda s: None,
+            logger=None,
+            on_backoff=lambda d: None,
+        )
+        assert result == "ok"
 
 
 class TestWaitGenEdgeCases:

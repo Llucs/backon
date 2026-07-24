@@ -16,6 +16,7 @@
 5. If you added a feature, you must add tests for it.
 6. If you fixed a bug, add a test that would have caught it.
 7. **Verify README is up to date**: every symbol in `__all__` must be documented, every parameter table must reflect the actual signatures, and every claim must be backed by the code.
+8. **Maintain 100% coverage**: run `coverage run -m pytest tests/ -q && coverage report --omit="tests/*"` — the `TOTAL` line must show `100%`. If coverage drops, add real tests before committing. Never use `# pragma: no cover` unless the branch is genuinely unreachable in the current Python version.
 
 ## Code Style
 

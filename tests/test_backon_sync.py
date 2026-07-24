@@ -223,3 +223,48 @@ class TestOnException:
 
         with pytest.raises(ValueError):
             f()
+
+
+class TestOnPredicateWithStaticMethod:
+    def test_staticmethod_wrapped(self):
+        calls = []
+
+        class MyClass:
+            @backon.on_predicate(
+                backon.constant,
+                jitter=None,
+                interval=0.01,
+                max_tries=3,
+                sleep=lambda s: None,
+                logger=None,
+            )
+            @staticmethod
+            def flaky():
+                calls.append(1)
+                return  # returns None (falsy) so retries
+
+        MyClass.flaky()
+        assert len(calls) == 3
+
+
+class TestOnExceptionGiveupExplicitNone:
+    def test_giveup_none_skips_condition_closure(self):
+        calls = []
+
+        @backon.on_exception(
+            backon.constant,
+            ValueError,
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            giveup=None,
+            sleep=lambda s: None,
+            logger=None,
+        )
+        def f():
+            calls.append(1)
+            raise ValueError("fail")
+
+        with pytest.raises(ValueError):
+            f()
+        assert len(calls) == 3

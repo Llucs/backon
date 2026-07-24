@@ -39,13 +39,11 @@ def _make_default_condition(exception, giveup, predicate):
             def wrapped(state):
                 if not retry_if_exception_type(exc_types)(state):
                     return False
-                if state.outcome and state.outcome.exception:
-                    result = giveup(state.outcome.exception)
-                    if isinstance(result, bool):
-                        return not result
-                    if isinstance(result, (int, float)):
-                        return float(result)
-                    return True
+                result = giveup(state.outcome.exception)
+                if isinstance(result, bool):
+                    return not result
+                if isinstance(result, (int, float)):
+                    return float(result)
                 return True
 
             condition = wrapped

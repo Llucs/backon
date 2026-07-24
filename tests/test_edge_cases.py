@@ -894,3 +894,568 @@ class TestBaseExceptionPropagation:
 
         with pytest.raises(KeyboardInterrupt):
             fn()
+
+
+class TestCommonGaps:
+    def test_maybe_call_typeerror_propagates(self):
+        class _TypeErrorRaiser:
+            def __call__(self, x):
+                raise TypeError("internal error in function")
+
+        with pytest.raises(TypeError, match="internal error"):
+            _maybe_call(_TypeErrorRaiser(), 42)
+
+    def test_config_handlers_with_logger_and_iterable_on_backoff(self):
+        calls = []
+
+        def f():
+            calls.append(1)
+            raise ValueError("fail")
+
+        with contextlib.suppress(ValueError):
+            backon.retry(
+                f,
+                backon.constant,
+                exception=ValueError,
+                max_tries=3,
+                jitter=None,
+                interval=0.01,
+                logger="test",
+                on_backoff=[lambda d: None, lambda d: None],
+                sleep=lambda s: None,
+            )
+        assert len(calls) == 3
+
+    def test_config_handlers_logger_no_user_handlers(self):
+        import logging
+
+        from backon._common import _config_handlers, _log_backoff
+
+        handlers = _config_handlers(
+            None,
+            default_handler=_log_backoff,
+            logger=logging.getLogger("test_gap"),
+            log_level=logging.INFO,
+        )
+        assert len(handlers) == 1
+
+
+class TestStateGaps:
+    def test_retry_error_no_cause_at_all(self):
+        attempt = Attempt(exception=None, tries=1)
+        err = RetryError(attempt)
+        assert err.last_attempt is attempt
+        assert err.__cause__ is None
+
+    def test_retry_error_reraise_no_exception(self):
+        attempt = Attempt(exception=None, tries=1)
+        err = RetryError(attempt)
+        err.reraise()
+
+
+class TestConditionsGaps:
+    def test_retry_if_not_exception_type_sequence(self):
+        c = retry_if_not_exception_type((ValueError, TypeError))
+        state = RetryState()
+        state.outcome = Attempt(exception=ValueError("x"))
+        assert c(state) is False
+
+    def test_paramspec_stub_exists(self):
+
+        from backon._typing import ParamSpec
+
+        ps = ParamSpec("P")
+        assert ps is not None
+
+
+class TestWaitGenGaps:
+    def test_wait_base_next_raises(self):
+        from backon._wait_gen import _Wait
+
+        w = _Wait()
+        with pytest.raises(NotImplementedError):
+            w.next()
+
+    def test_constant_empty_iterable(self):
+        from backon._wait_gen import constant
+
+        g = constant(interval=[])
+        with pytest.raises(StopIteration):
+            g.next()
+
+    def test_wait_add_with_combined_wait(self):
+        from backon._wait_gen import _CombinedWait, _Constant, _Wait
+
+        w = _Wait()
+        cw = _CombinedWait(_Constant(), _Constant())
+        result = w + cw
+        assert isinstance(result, _CombinedWait)
+        assert len(result._waits) == 3
+
+    def test_wait_add_non_combined(self):
+        from backon._wait_gen import _CombinedWait, _Wait
+
+        w = _Wait()
+        result = w + 1
+        assert isinstance(result, _CombinedWait)
+
+    def test_wait_factory_radd_with_combined_wait(self):
+        from backon._wait_gen import _CombinedWait, _Wait, expo
+
+        w = _Wait()
+        cw = _CombinedWait(w, w)
+        result = expo.__radd__(cw)
+        assert isinstance(result, _CombinedWait)
+        assert len(result._waits) == 3
+
+    def test_wait_factory_radd_with_non_wait(self):
+        from backon._wait_gen import _CombinedWait, expo
+
+        class _NonAddable:
+            pass
+
+        result = _NonAddable() + expo
+        assert isinstance(result, _CombinedWait)
+
+    def test_wait_call_with_many_args(self):
+        from backon._wait_gen import _Wait
+
+        w = _Wait(kw1=1, kw2=2)
+        g = w(2, 3, 4)
+        assert isinstance(g, _Wait)
+
+    def test_wait_chain_empty(self):
+        from backon._wait_gen import _WaitChain
+
+        wc = _WaitChain()
+        assert wc.next() == 0.0
+
+    def test_combined_wait_add_combined_wait(self):
+        from backon._wait_gen import _CombinedWait, _Constant, expo
+
+        cw1 = _CombinedWait(_Constant(), _Constant())
+        cw2 = _CombinedWait(_Constant(), _Constant())
+        result = cw1 + cw2
+        assert isinstance(result, _CombinedWait)
+        assert len(result._waits) == 4
+
+        result2 = expo + cw1
+        assert isinstance(result2, _CombinedWait)
+
+
+class TestHelpersGaps:
+    def test_make_default_condition_giveup_returns_string(self):
+        from backon._retry._helpers import _make_default_condition
+
+        condition = _make_default_condition(
+            exception=ValueError,
+            giveup=lambda e: "retry",
+            predicate=lambda x: False,
+        )
+        state = RetryState()
+        state.outcome = Attempt(exception=ValueError("fail"))
+        assert condition(state) is True
+
+
+class TestCommonMoreGaps:
+    def test_config_handlers_logger_with_single_handler(self):
+        import logging
+
+        from backon._common import _config_handlers, _log_backoff
+
+        handlers = _config_handlers(
+            lambda d: None,
+            default_handler=_log_backoff,
+            logger="test",
+            log_level=logging.INFO,
+        )
+        assert len(handlers) == 2
+
+
+class TestDecoratorGenDisabled:
+    @pytest.mark.asyncio
+    async def test_on_exception_async_gen_disabled(self):
+        backon.disable()
+        calls = []
+
+        @backon.on_exception(
+            backon.constant,
+            ValueError,
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            sleep=lambda s: None,
+            logger=None,
+        )
+        async def gen():
+            calls.append(1)
+            yield 42
+
+        result = []
+        async for item in gen():
+            result.append(item)
+        assert result == [42]
+        assert len(calls) == 1
+        backon.enable()
+
+    def test_on_exception_sync_gen_disabled(self):
+        backon.disable()
+        calls = []
+
+        @backon.on_exception(
+            backon.constant,
+            ValueError,
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            sleep=lambda s: None,
+            logger=None,
+        )
+        def gen():
+            calls.append(1)
+            yield 42
+
+        result = list(gen())
+        assert result == [42]
+        assert len(calls) == 1
+        backon.enable()
+
+
+class TestRetryingIteratorEdgeCases:
+    def test_retrying_iterator_condition_fails_giveup_false(self):
+        r = backon.Retrying(
+            backon.constant,
+            exception=ValueError,
+            max_tries=2,
+            jitter=None,
+            raise_on_giveup=False,
+            sleep=lambda s: None,
+            logger=None,
+        )
+        r._condition = backon.retry_never()
+        for attempt in r:
+            with attempt:
+                raise ValueError("fail")
+
+    def test_retrying_iterator_seconds_gt_zero(self):
+        waits = []
+
+        def track(s):
+            waits.append(s)
+
+        r = backon.Retrying(
+            backon.constant,
+            exception=ValueError,
+            max_tries=2,
+            jitter=None,
+            interval=0.01,
+            sleep=track,
+            logger=None,
+            raise_on_giveup=False,
+        )
+        for attempt in r:
+            with attempt:
+                raise ValueError("fail")
+        assert len(waits) >= 1
+
+
+class TestInnerEdgeCases:
+    def test_sync_inner_stop_none(self):
+        from backon._retry._inner import _retry_sync_inner
+
+        calls = []
+
+        def target():
+            calls.append(1)
+            raise ValueError("fail")
+
+        with pytest.raises(ValueError):
+            _retry_sync_inner(
+                target,
+                backon.constant,
+                condition=backon.retry_if_exception_type(ValueError),
+                max_tries=2,
+                jitter=None,
+                sleep=lambda s: None,
+                stop=None,
+                wait_gen_kwargs={"interval": 0.01},
+            )
+        assert len(calls) == 2
+
+    @pytest.mark.asyncio
+    async def test_async_inner_stop_none(self):
+        from backon._retry._inner import _retry_async_inner
+
+        calls = []
+
+        async def target():
+            calls.append(1)
+            raise ValueError("fail")
+
+        with pytest.raises(ValueError):
+            await _retry_async_inner(
+                target,
+                backon.constant,
+                condition=backon.retry_if_exception_type(ValueError),
+                max_tries=2,
+                jitter=None,
+                stop=None,
+                wait_gen_kwargs={"interval": 0.01},
+            )
+        assert len(calls) == 2
+
+
+class TestDecideStopReturnsTrue:
+    def test_attempt_timeout_with_stop_true(self):
+        from backon._retry._decide import _decide_outcome, _RetryAction
+
+        state = RetryState(target=lambda: 42)
+        state.tries = 5
+        state.elapsed = 0.5
+        state.outcome = Attempt(exception=backon.AttemptTimeoutError(), tries=5)
+        call_state = RetryCallState()
+        stop = backon.stop_after_attempt(3)
+        action, _seconds, _details, _use_cb, suppress = _decide_outcome(
+            state,
+            call_state,
+            None,
+            lambda s: True,
+            stop,
+            jitter=None,
+            max_time=None,
+            exc=backon.AttemptTimeoutError(),
+            ret=None,
+        )
+        assert action == _RetryAction.GIVEUP
+        assert suppress is True
+
+    def test_exc_custom_wait_with_stop_true(self):
+        from backon._retry._decide import _decide_outcome, _RetryAction
+
+        state = RetryState(target=lambda: 42)
+        state.tries = 5
+        state.elapsed = 0.5
+        state.outcome = Attempt(exception=ValueError("fail"), tries=5)
+        call_state = RetryCallState()
+        stop = backon.stop_after_attempt(3)
+        action, *_ = _decide_outcome(
+            state,
+            call_state,
+            None,
+            lambda s: 0.05,
+            stop,
+            jitter=None,
+            max_time=None,
+            exc=ValueError("fail"),
+            ret=None,
+        )
+        assert action == _RetryAction.GIVEUP
+
+    def test_exc_condition_true_with_stop_true(self):
+        from backon._retry._decide import _decide_outcome, _RetryAction
+        from backon._wait_gen import constant
+
+        state = RetryState(target=lambda: 42)
+        state.tries = 5
+        state.elapsed = 0.5
+        state.outcome = Attempt(exception=ValueError("fail"), tries=5)
+        call_state = RetryCallState()
+        wait = constant(interval=0.01)
+        stop = backon.stop_after_attempt(3)
+        action, *_ = _decide_outcome(
+            state,
+            call_state,
+            wait,
+            lambda s: True,
+            stop,
+            jitter=None,
+            max_time=None,
+            exc=ValueError("fail"),
+            ret=None,
+        )
+        assert action == _RetryAction.GIVEUP
+
+    def test_ret_custom_wait_with_stop_true(self):
+        from backon._retry._decide import _decide_outcome, _RetryAction
+
+        state = RetryState(target=lambda: 42)
+        state.tries = 5
+        state.elapsed = 0.5
+        state.outcome = Attempt(value=42, tries=5)
+        call_state = RetryCallState()
+        stop = backon.stop_after_attempt(3)
+        action, *_ = _decide_outcome(
+            state,
+            call_state,
+            None,
+            lambda s: 0.05,
+            stop,
+            jitter=None,
+            max_time=None,
+            exc=None,
+            ret=42,
+        )
+        assert action == _RetryAction.GIVEUP
+
+    def test_ret_condition_true_with_stop_true(self):
+        from backon._retry._decide import _decide_outcome, _RetryAction
+        from backon._wait_gen import constant
+
+        state = RetryState(target=lambda: 42)
+        state.tries = 5
+        state.elapsed = 0.5
+        state.outcome = Attempt(value=42, tries=5)
+        call_state = RetryCallState()
+        wait = constant(interval=0.01)
+        stop = backon.stop_after_attempt(3)
+        action, *_ = _decide_outcome(
+            state,
+            call_state,
+            wait,
+            lambda s: True,
+            stop,
+            jitter=None,
+            max_time=None,
+            exc=None,
+            ret=42,
+        )
+        assert action == _RetryAction.GIVEUP
+
+    def test_attempt_timeout_stop_before_delay_second_check(self):
+        from backon._retry._decide import _decide_outcome, _RetryAction
+        from backon._wait_gen import constant
+
+        state = RetryState(target=lambda: 42)
+        state.tries = 1
+        state.elapsed = 0.4
+        state.outcome = Attempt(exception=backon.AttemptTimeoutError(), tries=1)
+        call_state = RetryCallState()
+        wait = constant(interval=0.2)
+        stop = backon.stop_before_delay(0.5)
+        action, *_ = _decide_outcome(
+            state,
+            call_state,
+            wait,
+            lambda s: True,
+            stop,
+            jitter=None,
+            max_time=None,
+            exc=backon.AttemptTimeoutError(),
+            ret=None,
+        )
+        assert action == _RetryAction.GIVEUP
+
+
+class TestRetryingIteratorZeroWait:
+    def test_seconds_eq_zero_skips_sleep(self):
+        from backon._wait_gen import wait_none
+
+        waits = []
+
+        def track(s):
+            waits.append(s)
+
+        r = backon.Retrying(
+            wait_none,
+            exception=ValueError,
+            max_tries=2,
+            jitter=None,
+            raise_on_giveup=False,
+            sleep=track,
+            logger=None,
+        )
+        for attempt in r:
+            with attempt:
+                raise ValueError("fail")
+        assert len(waits) == 0
+
+
+class TestInnerStopNotNone:
+    def test_sync_inner_stop_not_none(self):
+        from backon._retry._inner import _retry_sync_inner
+
+        calls = []
+
+        def target():
+            calls.append(1)
+            raise ValueError("fail")
+
+        with pytest.raises(ValueError):
+            _retry_sync_inner(
+                target,
+                backon.constant,
+                condition=backon.retry_if_exception_type(ValueError),
+                max_tries=5,
+                jitter=None,
+                sleep=lambda s: None,
+                stop=backon.stop_after_attempt(2),
+                wait_gen_kwargs={"interval": 0.01},
+            )
+        assert len(calls) == 2
+
+    @pytest.mark.asyncio
+    async def test_async_inner_stop_not_none(self):
+        from backon._retry._inner import _retry_async_inner
+
+        calls = []
+
+        async def target():
+            calls.append(1)
+            raise ValueError("fail")
+
+        with pytest.raises(ValueError):
+            await _retry_async_inner(
+                target,
+                backon.constant,
+                condition=backon.retry_if_exception_type(ValueError),
+                max_tries=5,
+                jitter=None,
+                stop=backon.stop_after_attempt(2),
+                wait_gen_kwargs={"interval": 0.01},
+            )
+        assert len(calls) == 2
+
+
+class TestAsyncLoopTryAgain:
+    @pytest.mark.asyncio
+    async def test_async_loop_try_again_positive_wait(self):
+        calls = []
+
+        async def target():
+            calls.append(1)
+            if len(calls) < 2:
+                raise backon.TryAgain
+            return "ok"
+
+        result = await backon.retry(
+            target,
+            backon.constant,
+            condition=backon.retry_always(),
+            max_tries=3,
+            jitter=None,
+            interval=0.01,
+            logger=None,
+            on_backoff=lambda d: None,
+        )
+        assert result == "ok"
+
+    @pytest.mark.asyncio
+    async def test_async_loop_try_again_zero_wait(self):
+        calls = []
+
+        async def target():
+            calls.append(1)
+            if len(calls) < 2:
+                raise backon.TryAgain
+            return "ok"
+
+        result = await backon.retry(
+            target,
+            backon.wait_none,
+            condition=backon.retry_always(),
+            max_tries=3,
+            jitter=None,
+            logger=None,
+            on_backoff=lambda d: None,
+        )
+        assert result == "ok"

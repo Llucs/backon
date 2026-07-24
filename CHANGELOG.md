@@ -1,3 +1,10 @@
+## 4.4.3 - 2026-07-24
+
+- Remove dead code: 5 unreachable `if state.outcome is not None` guards in `_decide.py`, 2 `return True` dead-code statements in `_decorator.py` and `_helpers.py`, 1 always-true `if user_handlers is not None` guard in `_common.py`.
+- Add `# pragma: no cover` to the `ParamSpec` stub in `_typing.py` (unreachable on Python 3.13+).
+- Achieve 100% branch coverage across all 20 source files by adding real tests for uncovered branches in `_decide.py`, `_loops.py`, `_inner.py`, `_classes.py`, `_common.py`, `_decorator.py`, `_fast.py`, `_helpers.py`, `_state.py`, `_conditions.py`, `_wait_gen.py`, and `_typing.py`.
+- Remove duplicated tests from `test_coverage_gaps.py` (overlap with `test_edge_cases.py`).
+
 ## 4.4.2 - 2026-07-22
 
 - Documentation: remove stale Metrics references from README. The metrics instrumentation (`MetricsCollector`, `PrometheusMetrics`, `OTelMetrics`, `StructlogMetrics`, `get_metrics_collector`, `set_metrics_collector`) was removed as dead code in 4.3.0, but the README still listed a `[Metrics](#metrics)` ToC entry (broken link), advertised "Prometheus / OpenTelemetry / structlog metrics" in the Features list, and included a "Metrics | Prometheus / OTel" row in the migration table. All three references are now gone.

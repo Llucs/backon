@@ -515,13 +515,11 @@ def on_exception(
             def _condition(state: RetryState) -> bool | float:
                 if not retry_if_exception_type(exc_types)(state):
                     return False
-                if state.outcome and isinstance(state.outcome.exception, Exception):
-                    result = giveup(state.outcome.exception)
-                    if isinstance(result, bool):
-                        return not result
-                    if isinstance(result, (int, float)):
-                        return float(result)
-                    return True
+                result = giveup(state.outcome.exception)  # type: ignore[union-attr,arg-type]
+                if isinstance(result, bool):
+                    return not result
+                if isinstance(result, (int, float)):
+                    return float(result)
                 return True
 
             condition = cast(RetryCondition, _condition)

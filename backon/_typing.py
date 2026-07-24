@@ -11,7 +11,7 @@ if sys.version_info >= (3, 10):
     from typing import ParamSpec
 else:
 
-    class ParamSpec:  # type: ignore[no-redef]
+    class ParamSpec:  # type: ignore[no-redef]  # pragma: no cover
         def __init__(self, name: str) -> None: ...
 
 

@@ -72,7 +72,7 @@ branch = true
 command_line = "-m pytest"
 
 [tool.coverage.report]
-fail_under = 95
+fail_under = 100
 show_missing = true
 skip_empty = true
 

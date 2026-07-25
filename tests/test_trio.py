@@ -2,7 +2,6 @@ import pytest
 
 from backon._trio import retry_exception, retry_predicate
 
-
 try:
     import trio  # noqa: F401
 

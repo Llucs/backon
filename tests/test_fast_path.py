@@ -1050,3 +1050,195 @@ class TestFastPathMore:
                 stop=lambda s: s.tries >= 2,
             )
         assert len(calls) == 2
+
+
+class TestFastPathCustomWait:
+    def test_sync_condition_float_used_as_wait(self):
+        sleeps = []
+
+        def target():
+            raise ValueError("fail")
+
+        with pytest.raises(ValueError):
+            _retry_fast_sync(
+                target,
+                wait_none,
+                condition=lambda s: 0.123,
+                stop=lambda s: s.tries >= 3,
+                jitter=None,
+                max_time=None,
+                wait_gen_kwargs={},
+                sleep=lambda s: sleeps.append(s),
+            )
+        assert len(sleeps) == 2
+        assert all(s == 0.123 for s in sleeps), (
+            f"Expected 0.123 for each sleep, got {sleeps}"
+        )
+
+    def test_sync_condition_float_triggers_custom_wait_not_next_wait(self):
+        sleeps = []
+
+        class _TrackingWait:
+            def __call__(self, **kw):
+                return _TrackingWait()
+
+            def next(self, send=None):
+                sleeps.append("_next_wait")
+                return 999
+
+        def target():
+            raise ValueError("fail")
+
+        with pytest.raises(ValueError):
+            _retry_fast_sync(
+                target,
+                _TrackingWait(),
+                condition=lambda s: 0.456,
+                stop=lambda s: s.tries >= 3,
+                jitter=None,
+                max_time=None,
+                wait_gen_kwargs={},
+                sleep=lambda s: sleeps.append(s),
+            )
+        assert sleeps == [0.456, 0.456], f"Got {sleeps}"
+
+    def test_sync_condition_true_still_uses_next_wait(self):
+        sleeps = []
+
+        class _TrackingWait:
+            def __call__(self, **kw):
+                return _TrackingWait()
+
+            def next(self, send=None):
+                sleeps.append("_next_wait")
+                return 0.789
+
+        def target():
+            raise ValueError("fail")
+
+        with pytest.raises(ValueError):
+            _retry_fast_sync(
+                target,
+                _TrackingWait(),
+                condition=lambda s: True,
+                stop=lambda s: s.tries >= 3,
+                jitter=None,
+                max_time=None,
+                wait_gen_kwargs={},
+                sleep=lambda s: sleeps.append(s),
+            )
+        assert sleeps == ["_next_wait", 0.789, "_next_wait", 0.789], f"Got {sleeps}"
+
+    async def test_async_condition_float_on_success_path(self):
+        sleeps = []
+
+        async def target():
+            return "ok"
+
+        async def asleep(s):
+            sleeps.append(s)
+
+        result = await _retry_fast_async(
+            target,
+            wait_none,
+            condition=lambda s: 0.5,
+            stop=lambda s: s.tries >= 3,
+            jitter=None,
+            max_time=None,
+            wait_gen_kwargs={},
+            sleep=asleep,
+        )
+        assert result == "ok"
+        assert len(sleeps) == 2
+        assert all(s == 0.5 for s in sleeps)
+
+    def test_sync_condition_false_gives_up_immediately(self):
+        def target():
+            raise ValueError("fail")
+
+        with pytest.raises(ValueError):
+            _retry_fast_sync(
+                target,
+                wait_none,
+                condition=lambda s: False,
+                stop=lambda s: s.tries >= 10,
+                jitter=None,
+                max_time=None,
+                wait_gen_kwargs={},
+                sleep=lambda s: None,
+            )
+
+    async def test_async_condition_float_used_as_wait(self):
+        sleeps = []
+
+        async def target():
+            raise ValueError("fail")
+
+        async def asleep(s):
+            sleeps.append(s)
+
+        with pytest.raises(ValueError):
+            await _retry_fast_async(
+                target,
+                wait_none,
+                condition=lambda s: 0.123,
+                stop=lambda s: s.tries >= 3,
+                jitter=None,
+                max_time=None,
+                wait_gen_kwargs={},
+                sleep=asleep,
+            )
+        assert len(sleeps) == 2
+        assert all(s == 0.123 for s in sleeps), (
+            f"Expected 0.123 for each sleep, got {sleeps}"
+        )
+
+    async def test_async_condition_true_still_uses_next_wait(self):
+        sleeps = []
+
+        class _TrackingWait:
+            def __call__(self, **kw):
+                return _TrackingWait()
+
+            def next(self, send=None):
+                sleeps.append("_next_wait")
+                return 0.789
+
+        async def target():
+            raise ValueError("fail")
+
+        async def asleep(s):
+            sleeps.append(s)
+
+        with pytest.raises(ValueError):
+            await _retry_fast_async(
+                target,
+                _TrackingWait(),
+                condition=lambda s: True,
+                stop=lambda s: s.tries >= 3,
+                jitter=None,
+                max_time=None,
+                wait_gen_kwargs={},
+                sleep=asleep,
+            )
+        assert sleeps == ["_next_wait", 0.789, "_next_wait", 0.789], f"Got {sleeps}"
+
+    def test_sync_condition_float_on_success_path(self):
+        sleeps = []
+
+        def target():
+            return "ok"
+
+        result = _retry_fast_sync(
+            target,
+            wait_none,
+            condition=lambda s: 0.5,
+            stop=lambda s: s.tries >= 3,
+            jitter=None,
+            max_time=None,
+            wait_gen_kwargs={},
+            sleep=lambda s: sleeps.append(s),
+        )
+        assert result == "ok"
+        assert len(sleeps) == 2
+        assert all(s == 0.5 for s in sleeps)

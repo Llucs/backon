@@ -32,9 +32,11 @@ class HedgeError(Exception):
 
 
 def hedge(
-    target: Callable[P, R],
+    target: Callable[..., R],
     wait_gen: _WaitGenerator = expo,
     *,
+    args: tuple[Any, ...] = (),
+    kw: dict[str, Any] | None = None,
     max_hedge: int = 3,
     exception: _MaybeSequence[type[Exception]] | None = None,
     max_tries: _MaybeCallable[int] | None = None,
@@ -45,12 +47,15 @@ def hedge(
     predicate: _Predicate[Any] = operator.not_,
     **wait_gen_kwargs: Any,
 ) -> R:
+    _kw = kw or {}
     if inspect.iscoroutinefunction(target):
         return cast(
             R,
             _hedge_async(
                 target,
                 wait_gen,
+                args=args,
+                kw=_kw,
                 max_hedge=max_hedge,
                 exception=exception,
                 max_tries=max_tries,
@@ -65,6 +70,8 @@ def hedge(
     return _hedge_sync(
         target,
         wait_gen,
+        args=args,
+        kw=_kw,
         max_hedge=max_hedge,
         exception=exception,
         max_tries=max_tries,
@@ -85,6 +92,8 @@ def _hedge_sync(
     target: Callable[..., T],
     wait_gen: _WaitGenerator = expo,
     *,
+    args: tuple[Any, ...] = (),
+    kw: dict[str, Any] | None = None,
     max_hedge: int = 3,
     exception: _MaybeSequence[type[Exception]] | None = None,
     max_tries: _MaybeCallable[int] | None = None,
@@ -107,7 +116,7 @@ def _hedge_sync(
         for _i in range(max_hedge):
             fut = executor.submit(
                 _retry_sync_inner,
-                _make_hedge_target(target, (), {}),
+                _make_hedge_target(target, args, kw or {}),
                 wait_gen,
                 condition=condition,
                 max_tries=max_tries,
@@ -153,6 +162,8 @@ async def _hedge_async(
     target: Callable[..., T],
     wait_gen: _WaitGenerator = expo,
     *,
+    args: tuple[Any, ...] = (),
+    kw: dict[str, Any] | None = None,
     max_hedge: int = 3,
     exception: _MaybeSequence[type[Exception]] | None = None,
     max_tries: _MaybeCallable[int] | None = None,
@@ -171,7 +182,7 @@ async def _hedge_async(
 
     async def run_hedge():
         return await _retry_async_inner(
-            lambda: target(*(), **{}),
+            lambda: target(*args, **(kw or {})),
             wait_gen,
             condition=condition,
             max_tries=max_tries,

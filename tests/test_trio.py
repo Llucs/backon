@@ -3,8 +3,19 @@ import pytest
 from backon._trio import retry_exception, retry_predicate
 
 
+try:
+    import trio  # noqa: F401
+
+    _trio_available = True
+except ImportError:
+    _trio_available = False
+
+
 class TestTrioNotInstalled:
     def test_retry_predicate_raises_without_trio(self):
+        if _trio_available:
+            pytest.skip("trio is installed")
+
         def target():
             return None
 
@@ -25,6 +36,9 @@ class TestTrioNotInstalled:
             )
 
     def test_retry_exception_raises_without_trio(self):
+        if _trio_available:
+            pytest.skip("trio is installed")
+
         def target():
             raise ValueError("fail")
 
@@ -48,10 +62,10 @@ class TestTrioNotInstalled:
 
 
 class TestTrioImports:
-    def test_trio_flag_false(self):
-        from backon._trio import _trio_available
+    def test_trio_flag(self):
+        from backon._trio import _trio_available as ta
 
-        assert not _trio_available
+        assert ta is _trio_available
 
     def test_module_importable(self):
         import backon._trio as t
@@ -59,4 +73,4 @@ class TestTrioImports:
         assert hasattr(t, "retry_predicate")
         assert hasattr(t, "retry_exception")
         assert hasattr(t, "_trio_available")
-        assert not t._trio_available
+        assert t._trio_available == _trio_available

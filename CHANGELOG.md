@@ -1,3 +1,9 @@
+## 4.4.4 - 2026-07-25
+
+- Fix `hedge()` functional API not accepting arguments for the target function (#43). Added `args` and `kw` keyword-only parameters to `hedge()`, `_hedge_sync()`, and `_hedge_async()`, forwarding them to the target via `_make_hedge_target`.
+- Fix fast path silently discarding float return values from `condition`/`giveup` (#38). Added `_is_custom_wait` detection in `_retry_fast_sync` and `_retry_fast_async`, so custom wait times are used instead of calling `_next_wait()`.
+- Add tests for both bugs.
+
 ## 4.4.3 - 2026-07-24
 
 - Remove dead code: 5 unreachable `if state.outcome is not None` guards in `_decide.py`, 2 `return True` dead-code statements in `_decorator.py` and `_helpers.py`, 1 always-true `if user_handlers is not None` guard in `_common.py`.

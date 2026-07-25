@@ -220,3 +220,84 @@ class TestHedgeEdgeCases:
 
 def test_hedge_error_exported():
     assert HedgeError is backon.HedgeError
+
+
+class TestHedgeWithArgs:
+    def test_hedge_passes_positional_args(self):
+        def add(a, b):
+            return a + b
+
+        result = hedge(
+            add,
+            wait_none,
+            args=(1, 2),
+            max_hedge=1,
+            max_tries=1,
+            jitter=None,
+        )
+        assert result == 3
+
+    def test_hedge_with_args_and_exception(self):
+        calls = []
+
+        def divide(a, b):
+            calls.append(1)
+            return a / b
+
+        result = hedge(
+            divide,
+            wait_none,
+            args=(10, 2),
+            max_hedge=1,
+            max_tries=1,
+            jitter=None,
+        )
+        assert result == 5.0
+
+    def test_hedge_with_args_async(self):
+        async def add(a, b):
+            return a + b
+
+        result = asyncio.run(
+            hedge(
+                add,
+                wait_none,
+                args=(100, 200),
+                max_hedge=1,
+                max_tries=1,
+                jitter=None,
+            )
+        )
+        assert result == 300
+
+    def test_hedge_with_args_predicate(self):
+        calls = []
+
+        def is_positive(x):
+            calls.append(1)
+            return x > 0
+
+        result = hedge(
+            is_positive,
+            wait_none,
+            args=(-1,),
+            max_hedge=1,
+            max_tries=2,
+            predicate=lambda v: v is False,
+            jitter=None,
+        )
+        assert result is False
+
+    def test_hedge_with_args_failure_still_raises(self):
+        def fail(x):
+            raise ValueError(x)
+
+        with pytest.raises(ValueError, match="boom"):
+            hedge(
+                fail,
+                wait_none,
+                args=("boom",),
+                max_hedge=1,
+                max_tries=1,
+                jitter=None,
+            )

@@ -7,6 +7,7 @@ from backon._common import (
     _apply_test_overrides,
     _check_hot_loop,
     _init_wait_gen,
+    _is_custom_wait,
     _next_wait,
     _now,
     is_enabled,
@@ -121,13 +122,22 @@ def _retry_fast_sync(
 
         if exc is not None:
             result = condition(state)
-            if not result:
+            if _is_custom_wait(result):
+                seconds = float(result)
+            elif not result:
                 if raise_on_giveup:
                     raise exc
                 return None
+            else:
+                seconds = None
         else:
-            if not condition(state):
+            result = condition(state)
+            if _is_custom_wait(result):
+                seconds = float(result)
+            elif not result:
                 return ret
+            else:
+                seconds = None
 
         if stop(state):
             if exc is not None:
@@ -136,20 +146,21 @@ def _retry_fast_sync(
                 return None
             return ret
 
-        try:
-            seconds = _next_wait(
-                wait,
-                exc if exc is not None else ret,
-                jitter,
-                state.elapsed,
-                max_time,
-            )
-        except StopIteration:
-            if exc is not None:
-                if raise_on_giveup:
-                    raise exc from None
-                return None
-            return ret
+        if seconds is None:
+            try:
+                seconds = _next_wait(
+                    wait,
+                    exc if exc is not None else ret,
+                    jitter,
+                    state.elapsed,
+                    max_time,
+                )
+            except StopIteration:
+                if exc is not None:
+                    if raise_on_giveup:
+                        raise exc from None
+                    return None
+                return ret
 
         if seconds > 0:
             _check_hot_loop()
@@ -202,13 +213,22 @@ async def _retry_fast_async(
 
         if exc is not None:
             result = condition(state)
-            if not result:
+            if _is_custom_wait(result):
+                seconds = float(result)
+            elif not result:
                 if raise_on_giveup:
                     raise exc
                 return None
+            else:
+                seconds = None
         else:
-            if not condition(state):
+            result = condition(state)
+            if _is_custom_wait(result):
+                seconds = float(result)
+            elif not result:
                 return ret
+            else:
+                seconds = None
 
         if stop(state):
             if exc is not None:
@@ -217,20 +237,21 @@ async def _retry_fast_async(
                 return None
             return ret
 
-        try:
-            seconds = _next_wait(
-                wait,
-                exc if exc is not None else ret,
-                jitter,
-                state.elapsed,
-                max_time,
-            )
-        except StopIteration:
-            if exc is not None:
-                if raise_on_giveup:
-                    raise exc from None
-                return None
-            return ret
+        if seconds is None:
+            try:
+                seconds = _next_wait(
+                    wait,
+                    exc if exc is not None else ret,
+                    jitter,
+                    state.elapsed,
+                    max_time,
+                )
+            except StopIteration:
+                if exc is not None:
+                    if raise_on_giveup:
+                        raise exc from None
+                    return None
+                return ret
 
         if seconds > 0:
             _check_hot_loop()

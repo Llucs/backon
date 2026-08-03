@@ -42,11 +42,15 @@ def _retry_loop_sync(
     _holder=None,
     rate_limit=None,
     attempt_timeout=None,
+    args=(),
+    kwargs=None,
 ):
-    state = RetryState(target=target)
+    state = RetryState(target=target, args=args, kwargs=kwargs or {})
     start_time = _now()
     state.start_time = start_time
-    call_state = RetryCallState(fn=target, start_time=start_time)
+    call_state = RetryCallState(
+        fn=target, start_time=start_time, args=args, kwargs=kwargs or {}
+    )
     if _holder is not None:
         _holder["state"] = state
         _holder["call_state"] = call_state
@@ -70,14 +74,15 @@ def _retry_loop_sync(
             try:
                 if attempt_timeout is not None:
                     _executor = ThreadPoolExecutor(max_workers=1)
-                    _fut = _executor.submit(target)
                     try:
-                        ret = _fut.result(timeout=attempt_timeout)
-                    except _FuturesTimeoutError:
-                        _fut.cancel()
+                        _fut = _executor.submit(target)
+                        try:
+                            ret = _fut.result(timeout=attempt_timeout)
+                        except _FuturesTimeoutError:
+                            _fut.cancel()
+                            raise AttemptTimeoutError() from None
+                    finally:
                         _executor.shutdown(wait=False)
-                        raise AttemptTimeoutError() from None
-                    _executor.shutdown(wait=False)
                 else:
                     ret = target()
             except TryAgain:
@@ -192,11 +197,15 @@ async def _retry_loop_async(
     _holder=None,
     rate_limit=None,
     attempt_timeout=None,
+    args=(),
+    kwargs=None,
 ):
-    state = RetryState(target=target)
+    state = RetryState(target=target, args=args, kwargs=kwargs or {})
     start_time = _now()
     state.start_time = start_time
-    call_state = RetryCallState(fn=target, start_time=start_time)
+    call_state = RetryCallState(
+        fn=target, start_time=start_time, args=args, kwargs=kwargs or {}
+    )
     if _holder is not None:
         _holder["state"] = state
         _holder["call_state"] = call_state

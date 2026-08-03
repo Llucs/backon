@@ -355,6 +355,8 @@ def on_predicate(
                     lambda: _collect_async_gen(target(*args, **kwargs)),
                     wait_gen,
                     sleep=_sleep,
+                    args=args,
+                    kwargs=kwargs,
                     **_kw,
                 )
                 if collected is not None:
@@ -377,6 +379,8 @@ def on_predicate(
                     lambda: list(target(*args, **kwargs)),
                     wait_gen,
                     sleep=_sleep,
+                    args=args,
+                    kwargs=kwargs,
                     **_kw,
                 )
                 if collected is not None:
@@ -402,6 +406,8 @@ def on_predicate(
                         wrapped,
                         wait_gen,
                         sleep=_sleep,
+                        args=args,
+                        kwargs=kwargs,
                         **_kw,
                     ),
                 )
@@ -422,6 +428,8 @@ def on_predicate(
                         lambda: target(*args, **kwargs),
                         wait_gen,
                         sleep=_sleep,
+                        args=args,
+                        kwargs=kwargs,
                         **_kw,
                     ),
                 )
@@ -589,6 +597,8 @@ def on_exception(
                     lambda: _collect_async_gen(target(*args, **kwargs)),
                     wait_gen,
                     sleep=_sleep,
+                    args=args,
+                    kwargs=kwargs,
                     **_kw,
                 )
                 if collected is not None:
@@ -611,6 +621,8 @@ def on_exception(
                     lambda: list(target(*args, **kwargs)),
                     wait_gen,
                     sleep=_sleep,
+                    args=args,
+                    kwargs=kwargs,
                     **_kw,
                 )
                 if collected is not None:
@@ -636,6 +648,8 @@ def on_exception(
                         wrapped,
                         wait_gen,
                         sleep=_sleep,
+                        args=args,
+                        kwargs=kwargs,
                         **_kw,
                     ),
                 )
@@ -656,6 +670,8 @@ def on_exception(
                         lambda: target(*args, **kwargs),
                         wait_gen,
                         sleep=_sleep,
+                        args=args,
+                        kwargs=kwargs,
                         **_kw,
                     ),
                 )

@@ -62,6 +62,8 @@ def _retry_sync(
     _holder: dict | None = None,
     rate_limit: RateLimiter | None = None,
     attempt_timeout: float | None = None,
+    args: tuple = (),
+    kwargs: dict | None = None,
 ) -> Any:
     if wait_gen_kwargs is None:
         wait_gen_kwargs = {}
@@ -117,6 +119,8 @@ def _retry_sync(
         _holder=_holder,
         rate_limit=rate_limit,
         attempt_timeout=attempt_timeout,
+        args=args,
+        kwargs=kwargs,
     )
 
 
@@ -149,6 +153,8 @@ async def _retry_async(
     _holder: dict | None = None,
     rate_limit: RateLimiter | None = None,
     attempt_timeout: float | None = None,
+    args: tuple = (),
+    kwargs: dict | None = None,
 ) -> Any:
     if wait_gen_kwargs is None:
         wait_gen_kwargs = {}
@@ -204,6 +210,8 @@ async def _retry_async(
         _holder=_holder,
         rate_limit=rate_limit,
         attempt_timeout=attempt_timeout,
+        args=args,
+        kwargs=kwargs,
     )
 
 

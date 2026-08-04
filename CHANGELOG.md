@@ -1,3 +1,9 @@
+## 4.4.5 - 2026-08-03
+
+- Fix `ThreadPoolExecutor` leak on the exception path when `attempt_timeout` is set (#36). The executor created per attempt was only shut down on the timeout path, leaking worker threads whenever the target raised an exception. `_retry_loop_sync` now wraps the executor in `try/finally` so `_executor.shutdown(wait=False)` runs on every code path (success, timeout, and exception).
+- Fix handler `details` dict always containing empty `args` and `kwargs` (#73). The real call arguments were never threaded into `RetryState`/`RetryCallState`, so handlers reading `details["args"]`/`details["kwargs"]` (e.g. `details["kwargs"]["query_id"]`) got `()`/`{}` and raised `KeyError`. `args`/`kwargs` are now plumbed from every entry point (`on_exception`/`on_predicate` sync+async, sync/async generators, `Retrying.call`/`async_call`, `RetryingCaller`/`AsyncRetryingCaller`, `hedge`) into the retry loop, and `RetryState`/`RetryCallState` are constructed with them so every handler (`on_attempt`, `on_backoff`, `on_giveup`, `on_success`, `before`, `after`, `before_sleep`) receives the actual call arguments.
+- Add regression tests for both issues: executor thread leak (decorator, functional API, `RetryingCaller`, success path) and handler `details` args/kwargs (sync+async, generators, `Retrying`/`RetryingCaller`/`AsyncRetryingCaller`, `on_backoff`/`on_giveup`/`on_success`/`on_attempt`/`before`/`after`/`before_sleep`), including the `KeyError` reproduction from the issue.
+
 ## 4.4.4 - 2026-07-25
 
 - Fix `hedge()` functional API not accepting arguments for the target function (#43). Added `args` and `kw` keyword-only parameters to `hedge()`, `_hedge_sync()`, and `_hedge_async()`, forwarding them to the target via `_make_hedge_target`.

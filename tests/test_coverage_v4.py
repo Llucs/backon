@@ -533,6 +533,94 @@ class TestConfigHandlersNoLoggerIterableHandlers:
         assert handler_calls == [1, 2, 1, 2]
 
 
+class TestOnPredicateAsyncGeneratorEmpty:
+    @pytest.mark.asyncio
+    async def test_async_generator_empty(self):
+        calls = []
+
+        @backon.on_predicate(
+            backon.constant, interval=0, jitter=None, max_tries=3, raise_on_giveup=False
+        )
+        async def gen():
+            calls.append(1)
+            if False:
+                yield
+
+        result = [item async for item in gen()]
+        assert result == []
+        assert len(calls) == 3
+
+
+class TestOnPredicateAsyncGeneratorDisabledEmpty:
+    @pytest.mark.asyncio
+    async def test_async_generator_empty_disabled(self):
+        was = backon._common.is_enabled()
+        backon.disable()
+        try:
+            calls = []
+
+            @backon.on_predicate(
+                backon.constant,
+                interval=0,
+                jitter=None,
+                max_tries=3,
+                raise_on_giveup=False,
+            )
+            async def gen():
+                calls.append(1)
+                if False:
+                    yield
+
+            result = [item async for item in gen()]
+            assert result == []
+            assert len(calls) == 1
+        finally:
+            if was:
+                backon.enable()
+
+
+class TestOnExceptionAsyncGeneratorEmpty:
+    @pytest.mark.asyncio
+    async def test_async_generator_empty(self):
+        calls = []
+
+        @backon.on_exception(
+            backon.constant, ValueError, interval=0, jitter=None, max_tries=3
+        )
+        async def gen():
+            calls.append(1)
+            if False:
+                yield
+
+        result = [item async for item in gen()]
+        assert result == []
+        assert len(calls) == 1
+
+
+class TestOnExceptionAsyncGeneratorDisabledEmpty:
+    @pytest.mark.asyncio
+    async def test_async_generator_empty_disabled(self):
+        was = backon._common.is_enabled()
+        backon.disable()
+        try:
+            calls = []
+
+            @backon.on_exception(
+                backon.constant, ValueError, interval=0, jitter=None, max_tries=3
+            )
+            async def gen():
+                calls.append(1)
+                if False:
+                    yield
+
+            result = [item async for item in gen()]
+            assert result == []
+            assert len(calls) == 1
+        finally:
+            if was:
+                backon.enable()
+
+
 class TestOnPredicateAsyncGeneratorDisabledPath:
     """Covers disabled branch for async gen in on_predicate."""
 

@@ -131,6 +131,8 @@ def _hedge_sync(
                 retry_error_callback=None,
                 raise_on_giveup=True,
                 wait_gen_kwargs=wait_gen_kwargs,
+                args=args,
+                kwargs=kw or {},
             )
             futures.add(fut)
 
@@ -197,6 +199,8 @@ async def _hedge_async(
             retry_error_callback=None,
             raise_on_giveup=True,
             wait_gen_kwargs=wait_gen_kwargs,
+            args=args,
+            kwargs=kw or {},
         )
 
     tasks = [asyncio.create_task(run_hedge()) for _ in range(max_hedge)]

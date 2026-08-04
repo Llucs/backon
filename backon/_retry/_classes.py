@@ -275,6 +275,8 @@ class Retrying:
                 _holder=_holder,
                 rate_limit=self._rate_limit,
                 attempt_timeout=self._attempt_timeout,
+                args=args,
+                kwargs=kwargs,
             )
         finally:
             self._state = _holder.get("state")
@@ -316,6 +318,8 @@ class Retrying:
                 _holder=_holder,
                 rate_limit=self._rate_limit,
                 attempt_timeout=self._attempt_timeout,
+                args=args,
+                kwargs=kwargs,
             )
         finally:
             self._state = _holder.get("state")
@@ -426,6 +430,8 @@ class RetryingCaller:
             after=self._after,
             rate_limit=self._rate_limit,
             attempt_timeout=self._attempt_timeout,
+            args=args,
+            kwargs=kwargs,
         )
 
     def copy(self) -> RetryingCaller:
@@ -555,6 +561,8 @@ class AsyncRetryingCaller:
             after=self._after,
             rate_limit=self._rate_limit,
             attempt_timeout=self._attempt_timeout,
+            args=args,
+            kwargs=kwargs,
         )
 
     def copy(self) -> AsyncRetryingCaller:

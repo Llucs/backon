@@ -281,6 +281,8 @@ def _retry_fast_sync_inner(
     _holder=None,
     rate_limit=None,
     attempt_timeout=None,
+    args=(),
+    kwargs=None,
 ):
     if not is_enabled():
         return target()
@@ -346,6 +348,8 @@ def _retry_fast_sync_inner(
         _holder=_holder,
         rate_limit=rate_limit,
         attempt_timeout=attempt_timeout,
+        args=args,
+        kwargs=kwargs,
     )
 
 
@@ -372,6 +376,8 @@ async def _retry_fast_async_inner(
     _holder=None,
     rate_limit=None,
     attempt_timeout=None,
+    args=(),
+    kwargs=None,
 ):
     if not is_enabled():
         return await target()
@@ -437,4 +443,6 @@ async def _retry_fast_async_inner(
         _holder=_holder,
         rate_limit=rate_limit,
         attempt_timeout=attempt_timeout,
+        args=args,
+        kwargs=kwargs,
     )

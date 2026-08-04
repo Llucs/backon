@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import logging
-import sys
 from collections.abc import Callable, Coroutine, Sequence
 from typing import Any, TypedDict, TypeVar, Union
 
 from backon._wait_gen import _Wait
 
-if sys.version_info >= (3, 10):
+try:
     from typing import ParamSpec
-else:
+except ImportError:  # pragma: no cover
 
     class ParamSpec:  # type: ignore[no-redef]  # pragma: no cover
         def __init__(self, name: str) -> None: ...
